@@ -1,0 +1,21 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+numpy = "==1.21.4"
+scipy = "==1.7.3"
+matplotlib = "==3.5.1"
+jupyterlab = "==3.2.5"
+jupyterlab-lsp = "==3.9.2"
+# jupyterlab-kite = "==2.0.2"
+lckr-jupyterlab-variableinspector = "==3.0.9"
+jupyterlab_code_formatter = "1.4.10"
+black = "==21.12b0"
+isort = "==5.10.1"
+
+[dev-packages]
+
+[requires]
+python_version = "3.9"
