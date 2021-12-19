@@ -14,6 +14,7 @@ lckr-jupyterlab-variableinspector = "==3.0.9"
 jupyterlab_code_formatter = "1.4.10"
 black = "==21.12b0"
 isort = "==5.10.1"
+pyaudio = {path = "./libs/PyAudio-0.2.11-cp39-cp39-win_amd64.whl"}
 
 [dev-packages]
 

@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "906c3edd4e56f05a14bf48a92ed0c921670c684311dcf1a49e1306ed4f1d8b1f"
+            "sha256": "ada41b7c90df0617dd83ba355fd8a62c187671c095e89729bf5cb4afb2540af9"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -780,6 +780,13 @@
             "markers": "python_full_version >= '3.6.2'",
             "version": "==3.0.24"
         },
+        "pyaudio": {
+            "hashes": [
+                "sha256:d83958e47e7986a6faab46baa9f86dd64e5171c3302b8f073c28b7984926ec9c"
+            ],
+            "path": "./libs/PyAudio-0.2.11-cp39-cp39-win_amd64.whl",
+            "version": "==0.2.11"
+        },
         "pycparser": {
             "hashes": [
                 "sha256:8ee45429555515e1f6b185e78100aea234072576aa43ab53aefcae078162fca9",
@@ -1092,7 +1099,7 @@
                 "sha256:4987c65554f7a2dbf30c18fd48778ef124af6fab771a377103da0585e2336ece",
                 "sha256:c4fdf4019605b6e5423637e01bc9fe4daef873709a7973e195ceba0a62bbc844"
             ],
-            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4' and python_version < '4.0'",
+            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4' and python_version < '4'",
             "version": "==1.26.7"
         },
         "wcwidth": {
