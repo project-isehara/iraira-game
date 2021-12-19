@@ -11,7 +11,8 @@ Python環境にpipenvをインストールする。
 pip install pipenv
 ```
 
-pipenvがインストールされたPython環境下で環境構築する
+pipenvがインストールされたPython環境下で環境構築する。
+カレントディレクトリをPipfileがあるフォルダで実行する。
 
 Pipenvパスが通っている場合
 ```
