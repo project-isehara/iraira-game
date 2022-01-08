@@ -2,6 +2,7 @@ import sys
 import tkinter as tk
 import numpy as np
 import pyaudio
+import math
 
 #参考サイト:http://www.isc.meiji.ac.jp/~ri03037/ICTappli2/step04.html
 
@@ -9,7 +10,7 @@ import pyaudio
 def main():
     root = tk.Tk()
     root.option_add('*font', 'ＭＳゴシック 16')
-    root.title("任意音再生Ver0.1")
+    root.title("任意音再生Ver0.2")
     ww = WidgetsWindow(root)
     root.mainloop()
 
@@ -22,11 +23,11 @@ class WidgetsWindow():
 
         # ボタン
         self.b1 = tk.Button(self.tf, text = '正弦波')
-        self.b2 = tk.Button(self.tf, text = '牽引錯覚波(未実装)')
+        self.b2 = tk.Button(self.tf, text = '牽引錯覚波')
         self.b1.grid(column = 0, row = 1, sticky = 'w')
         self.b2.grid(column = 1, row = 1, sticky = 'w')
         self.b1.bind("<Button-1>", self.sinPlayer)
-        self.b2.bind("<Button-1>")
+        self.b2.bind("<Button-1>", self.tracPlayer)
 
         # 音量スケール
         self.volVar = tk.DoubleVar()        # コントロール変数
@@ -55,7 +56,7 @@ class WidgetsWindow():
 
     def sinPlayer(self,t):#音声プレーヤー。pyaudioの読み込みにちょっと時間かかる。あらかじめ読み込んでおきたいけどやり方が分からん。
         p = pyaudio.PyAudio()
-        volume = 0.5  # range [0.0, 1.0]
+        # volume = 0.5  # range [0.0, 1.0]
         fs = 44100  # sampling rate, Hz, must be integer
         # duration = 15.0  # in seconds, may be float
         # f = 15000.0  # sine frequency, Hz, may be float
@@ -76,6 +77,29 @@ class WidgetsWindow():
 
         stream.stop_stream()
         stream.close()
+
+    def tracPlayer(self,t):
+        p = pyaudio.PyAudio()
+        fs = 44100
+        volume = self.volVar.get()
+        f = self.freqVar.get()
+        duration = self.sbVar.get()
+        start = 3/4 #波形を反転させる開始位置(1周期の中で)
+        end = 1 #波形を反転させる終了位置(1周期の中で)
+        unitNum = int(duration*f) #持続時間中に波形が何個入るか
+        t = np.arange(fs * duration) #波形データ生成用の時間ベクトル
+        tracAudio = (np.sin(2 * np.pi * t * f / fs)).astype(np.float32) #波形データ(音量反映無し)
+        stream = p.open(format=pyaudio.paFloat32, channels=1, rate=fs, output=True)
+        
+        #範囲(start~end)に相当するデータを反転させる
+        for i in range(unitNum):#1周期ごとにstart~endの範囲の波形を反転させる
+            Indx = np.where((t>=start*fs * duration+i*fs * duration)&(t<end*fs * duration+i*fs * duration))
+            tracAudio[Indx] = -tracAudio[Indx]
+
+        # play. May repeat with different volume values (if done interactively)
+        stream.write((volume * tracAudio).tostring()) #波形データに音量を反映させて文字列に変換して再生(文字列変換はモジュールの仕様)
+
+
 
 if __name__ == '__main__':
     main()
