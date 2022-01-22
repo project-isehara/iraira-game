@@ -1,43 +1,7 @@
 from __future__ import annotations
 
-import asyncio
-from typing import Any
-
 import matplotlib.pyplot as plt
 import numpy as np
-import pyaudio
-
-import readchar
-
-
-# やりたいこと
-# 変更できるパラメータ
-# * 音量
-# * 牽引力方向
-# * 周波数
-# 持続時間式ではなくstart/stop式にする
-
-
-def play_audio():
-    # パラメータ
-    volume: float = 0.5
-
-    fs = 44_100  # サンプリング周波数[Hz]
-    duration_sec = 2
-    t = np.linspace(0, duration_sec, int(fs * duration_sec), endpoint=False)
-    f = 200  # 非対称周期関数の周波数
-
-    sig = asymmetric_signal(2 * np.pi * f * t).astype(np.float32)
-
-    p = pyaudio.PyAudio()
-    stream = p.open(format=pyaudio.paFloat32, channels=1, rate=fs, output=True)
-
-    for _ in range(3):
-        stream.write((volume * sig).tobytes())
-
-    stream.stop_stream()
-    stream.close()
-    p.terminate()
 
 
 def asymmetric_signal(x, count_anti_node: int = 4) -> np.ndarray:
@@ -78,9 +42,5 @@ def test_asymmetric_signal():
     plt.show()
 
 
-def main():
-    play_audio()
-
-
 if __name__ == "__main__":
-    main()
+    test_asymmetric_signal()
