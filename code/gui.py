@@ -76,7 +76,7 @@ class WidgetsWindow:
         stream = p.open(format=pyaudio.paFloat32, channels=1, rate=fs, output=True)
 
         # play. May repeat with different volume values (if done interactively)
-        stream.write((volume * sinAudio).tostring())
+        stream.write((volume * sinAudio).tobytes())
 
         # plt.plot(sinAudio)
         # plt.show()
@@ -108,7 +108,7 @@ class WidgetsWindow:
         # plt.show()
 
         # play. May repeat with different volume values (if done interactively)
-        stream.write((volume * tracAudio).tostring())  # 波形データに音量を反映させて文字列に変換して再生(文字列変換はモジュールの仕様)
+        stream.write((volume * tracAudio).tobytes())  # 波形データに音量を反映させて文字列に変換して再生(文字列変換はモジュールの仕様)
 
     def invtracPlayer(self, t):
         p = pyaudio.PyAudio()
@@ -134,7 +134,7 @@ class WidgetsWindow:
         # plt.show()
 
         # play. May repeat with different volume values (if done interactively)
-        stream.write((volume * tracAudio).tostring())  # 波形データに音量を反映させて文字列に変換して再生(文字列変換はモジュールの仕様)
+        stream.write((volume * tracAudio).tobytes())  # 波形データに音量を反映させて文字列に変換して再生(文字列変換はモジュールの仕様)
 
 
 if __name__ == "__main__":
