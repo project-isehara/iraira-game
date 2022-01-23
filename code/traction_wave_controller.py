@@ -2,16 +2,17 @@ from __future__ import annotations
 
 import asyncio
 import dataclasses
+import multiprocessing
 from collections.abc import Callable
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from enum import auto, Enum
+from multiprocessing.managers import DictProxy
 from typing import ClassVar
 
 import numpy as np
 import pyaudio
 import readchar
-from pyaudio import Stream
 
 from traction_wave import asymmetric_signal
 
@@ -48,48 +49,66 @@ class SignalParameter:
 
 
 @dataclass(frozen=True)
-class SignalParameter2:
+class SignalParameterImmutable:
     """非対称周期信号のパラメータ"""
 
     frequency: float
     traction_direction: TractionDirection = TractionDirection.up
 
-    def _replace(self, **changes) -> SignalParameter2:
+    def _replace(self, **changes) -> SignalParameterImmutable:
         return dataclasses.replace(self, **changes)
 
-    def frequency_up(self) -> SignalParameter2:
+    def frequency_up(self) -> SignalParameterImmutable:
         return self._replace(frequency=self.frequency + 1)
 
-    def frequency_down(self) -> SignalParameter2:
+    def frequency_down(self) -> SignalParameterImmutable:
         f = self.frequency - 1
         if f < 0:
             f = 0
         return self._replace(frequency=f)
 
-    def traction_up(self) -> SignalParameter2:
+    def traction_up(self) -> SignalParameterImmutable:
         return self._replace(traction_direction=TractionDirection.up)
 
-    def traction_down(self) -> SignalParameter2:
+    def traction_down(self) -> SignalParameterImmutable:
         return self._replace(traction_direction=TractionDirection.down)
 
 
-@dataclass(frozen=True)
+@dataclass
 class PlayerParameter:
     """音声プレーヤーのパラメータ"""
 
     volume: float = 0.5  # 0~1
     fs: ClassVar[int] = 44_100
 
-    def _replace(self, **changes) -> PlayerParameter:
+    def volume_up(self):
+        self.volume += 0.1
+        if self.volume > 1:
+            self.volume = 1
+
+    def volume_down(self):
+        self.volume -= 0.1
+        if self.volume < 0:
+            self.volume = 0
+
+
+@dataclass(frozen=True)
+class PlayerParameterImmutable:
+    """音声プレーヤーのパラメータ"""
+
+    volume: float = 0.5  # 0~1
+    fs: ClassVar[int] = 44_100
+
+    def _replace(self, **changes) -> PlayerParameterImmutable:
         return dataclasses.replace(self, **changes)
 
-    def volume_up(self) -> PlayerParameter:
+    def volume_up(self) -> PlayerParameterImmutable:
         volume = self.volume + 0.1
         if volume > 1:
             volume = 1
         return self._replace(volume=volume)
 
-    def volume_down(self) -> PlayerParameter:
+    def volume_down(self) -> PlayerParameterImmutable:
         volume = self.volume - 0.1
         if volume < 0:
             volume = 0
@@ -128,34 +147,10 @@ class Player:
         self._stream.write((sig * self.param.volume).tobytes())
 
     def volume_up(self):
-        self.param = self.param.volume_up()
+        self.param.volume_up()
 
     def volume_down(self):
-        self.param = self.param.volume_down()
-
-
-def play_audio2(callback: Callable[[Stream]], is_running: Callable[[], bool], fs: int):
-    py_audio = pyaudio.PyAudio()
-    stream = py_audio.open(format=pyaudio.paFloat32, channels=1, rate=fs, output=True)
-
-    while is_running():
-        callback(stream)
-    stream.stop_stream()
-    stream.close()
-    py_audio.terminate()
-
-    # try:
-    #     while True:
-    #         if is_running():
-    #             stream.start_stream()
-    #             callback(stream)
-    #         else:
-    #             stream.stop_stream()
-    # finally:
-    #     stream.stop_stream()
-    #     stream.close()
-    #     py_audio.terminate()
-    #
+        self.param.volume_down()
 
 
 def create_asymmetric_signal(
@@ -171,28 +166,35 @@ def create_asymmetric_signal(
     return sig
 
 
-def listen_keyboard_input(callback: Callable[[AppCommand], None], is_running: Callable[[bool]]):
+def listen_keyboard_input(callback: Callable[[AppCommand], None],
+                          # is_running: Synchronized,
+                          d: DictProxy,
+                          h: AppStateHelper
+                          ):
     """ キーボードの入力を読み取り対応する AppCommand で Callable を呼ぶ
     :param callback: AppCommandを処理するコールバック関数
     :param is_running:
     """
-    while is_running():
-        key = readchar.readkey()
 
+    while h.running:
+        key = readchar.readkey()  # ブロッキング
         if key == "q":
+            app_state._running = False
+            h.running = False
             callback(AppCommand.app_stop)
+            return
 
         elif key == "z":
             callback(AppCommand.change_play_state)
 
-        elif key == readchar.key.UP:
+        elif key == "d":
             callback(AppCommand.volume_up)
-        elif key == readchar.key.DOWN:
+        elif key == "f":
             callback(AppCommand.volume_down)
 
-        elif key == readchar.key.LEFT:
+        elif key == "x":
             callback(AppCommand.traction_up)
-        elif key == readchar.key.RIGHT:
+        elif key == "c":
             callback(AppCommand.traction_down)
 
         elif key == "a":
@@ -217,78 +219,168 @@ class AppCommand(Enum):
     change_play_state = auto()
 
 
-def main():
-    # アプリ内グローバル
-    sig_param = SignalParameter(frequency=200)
-    player = Player(PlayerParameter())
+def play(
+        # player_param, sig_param,
+        # is_running: Callable[[bool]],
+        d: DictProxy,
+        h: AppStateHelper
 
-    # player = Player(PlayerParameter())
-
-    def print_info():
-        """CLI画面に表示される情報"""
-        print(
-            f"\rvolume {player.param.volume:.2f} "
-            f"f: {sig_param.frequency} "
-            f"traction: {sig_param.traction_direction}",
-            end=""
+):
+    player = Player(player_param)
+    player.start()
+    # while loop.is_running():
+    # while True:
+    while h.running:
+        sig = create_asymmetric_signal(
+            sig_param.frequency,
+            player_param.fs,
+            sig_param.traction_direction,
+            1
         )
+        player.write(sig)
 
-    def execute_command(app_key: AppCommand):
-        """AppCommandに対応するアプリ動作をする"""
 
-        if app_key == AppCommand.app_stop:
-            is_active_listen_keyboard = False
-            player.close()
-            loop.stop()
-            loop.close()
+# アプリ内グローバル
+sig_param = SignalParameter(frequency=200)
+player_param = PlayerParameter()
 
-        elif app_key == AppCommand.change_play_state:
-            player.change_play_state()
 
-        elif app_key == AppCommand.volume_up:
-            player.volume_up()
-        elif app_key == AppCommand.volume_down:
-            player.volume_down()
+@dataclass
+class AppState:
+    _running: bool
 
-        elif app_key == AppCommand.traction_up:
-            sig_param.traction_up()
-        elif app_key == AppCommand.traction_down:
-            sig_param.traction_down()
+    @property
+    def running(self):
+        return self._running
 
-        elif app_key == AppCommand.frequency_up:
-            sig_param.frequency_up()
-        elif app_key == AppCommand.frequency_down:
-            sig_param.frequency_down()
 
-        print_info()
+app_state = AppState(True)
 
-    def play():
-        player.start()
-        while loop.is_running():
-            sig = create_asymmetric_signal(
-                sig_param.frequency,
-                player.param.fs,
-                sig_param.traction_direction,
-                1
-            )
-            player.write(sig)
 
-    def is_active_listen_keyboards():
-        return is_active_listen_keyboard
+def execute_command(app_key: AppCommand):
+    """AppCommandに対応するアプリ動作をする"""
+
+    if app_key == AppCommand.app_stop:
+        app_state._running = False
+
+        pass
+
+        # player.close()
+
+    elif app_key == AppCommand.change_play_state:
+        pass
+        # player.change_play_state()
+
+    elif app_key == AppCommand.volume_up:
+        player_param.volume_up()
+    elif app_key == AppCommand.volume_down:
+        player_param.volume_down()
+
+    elif app_key == AppCommand.traction_up:
+        sig_param.traction_up()
+    elif app_key == AppCommand.traction_down:
+        sig_param.traction_down()
+
+    elif app_key == AppCommand.frequency_up:
+        sig_param.frequency_up()
+    elif app_key == AppCommand.frequency_down:
+        sig_param.frequency_down()
 
     print_info()
-    is_active_listen_keyboard = True
 
+
+def print_info():
+    """CLI画面に表示される情報"""
+    print(
+        f"\rvolume {player_param.volume:.2f} "
+        f"f: {sig_param.frequency} "
+        f"traction: {sig_param.traction_direction}",
+        end=""
+    )
+
+
+@dataclass
+class AppStateHelper:
+    """マルチプロセス時に生で値を触るのがいやなので"""
+    _raw: DictProxy
+
+    @property
+    def running(self) -> bool:
+        return self._raw["is_running"]
+
+    @running.setter
+    def running(self, value: bool):
+        self._raw["is_running"] = value
+
+    # def set_runningss(self, value: bool):
+    #     self._raw["is_running"] = value
+
+
+@dataclass
+class SignalParameterHelper:
+    """マルチプロセス時に生で値を触るのがいやなので"""
+    _raw: DictProxy
+
+
+@dataclass
+class PlayerParameterHelper:
+    """マルチプロセス時に生で値を触るのがいやなので"""
+    _raw: DictProxy
+
+    # volume: float = 0.5  # 0~1
+    # fs: ClassVar[int] = 44_100
+
+    @property
+    def volume(self) -> float:
+        return self._raw["volume"]
+
+    @volume.setter
+    def volume(self, value: float):
+        self._raw["volume"] = value
+
+    def volume_up(self):
+        v = self.volume
+        v += 0.1
+        if v > 1:
+            v = 1
+        self.volume = v
+
+    def volume_down(self):
+        v = self.volume
+        v -= 0.1
+        if v < 0:
+            v = 0
+        self.volume = v
+
+
+def main():
     # 起動
-    with ThreadPoolExecutor() as pool:
-        f1 = loop.run_in_executor(pool, listen_keyboard_input, execute_command,
-                                  is_active_listen_keyboards())
-        f2 = loop.run_in_executor(pool, play)
-        # f = asyncio.gather(f1, f2)
-    # loop.run_in_executor(None, play_audio, lambda: loop.is_running())
-    # loop.run_in_executor(None, play_audio2, sound, is_playing, player_param.fs)
+    # f1 = loop.run_in_executor(None, listen_keyboard_input, execute_command, )
+    # f2 = loop.run_in_executor(None, play, player_param, sig_param, )
+
+    print_info()
+
+    # 共有変数を使うためのManager
+    with multiprocessing.Manager() as manager:
+        # is_running = manager.Value(ctypes.c_bool, True)
+        d = manager.dict()
+        app_state = AppStateHelper(d)
+        app_state.running = True
+
+        with ProcessPoolExecutor() as pool:
+            f1 = loop.run_in_executor(pool, listen_keyboard_input, execute_command, d,
+                                      AppStateHelper(d))
+            f2 = loop.run_in_executor(pool, play, d, AppStateHelper(d))
+
+    # f1 = loop.run_in_executor(pool, listen_keyboard_input, execute_command,
+    #                           is_active_listen_keyboards()
+    #                           )
+    # f2 = loop.run_in_executor(pool, play, player_param, sig_param)
+    f = asyncio.gather(f1, f2)
+    # loop.create_task(f1)
+
+    loop.run_until_complete(f)
     # loop.run_forever()
-    loop.run_until_complete(f1)
 
 
 if __name__ == "__main__":
