@@ -6,9 +6,8 @@ import multiprocessing
 from abc import ABC
 from collections.abc import Callable
 from concurrent.futures import ProcessPoolExecutor
-from dataclasses import InitVar
-from dataclasses import dataclass
-from enum import auto, Enum
+from dataclasses import InitVar, dataclass
+from enum import Enum, auto
 from functools import partial
 from multiprocessing.managers import DictProxy
 from typing import ClassVar
@@ -16,12 +15,12 @@ from typing import ClassVar
 import numpy as np
 import pyaudio
 import readchar
-
 from traction_wave import asymmetric_signal
 
 
 class TractionDirection(Enum):
     """牽引力方向"""
+
     up = auto()
     down = auto()
 
@@ -123,12 +122,7 @@ class Player:
 
     def __init__(self, param: PlayerParameter):
         self._py_audio = pyaudio.PyAudio()
-        self._stream = self._py_audio.open(
-            format=pyaudio.paFloat32,
-            channels=1,
-            rate=param.fs,
-            output=True
-        )
+        self._stream = self._py_audio.open(format=pyaudio.paFloat32, channels=1, rate=param.fs, output=True)
         self.param = param
 
     def start(self):
@@ -157,11 +151,13 @@ class Player:
         self.param.volume_down()
 
 
-def keyboard_listener(callback: Callable[[AppCommand], None], h: AppStateHelper,
-                      sig_param: SignalParameterHelper,
-                      player_param: PlayerParameterHelper
-                      ):
-    """ キーボードの入力を読み取り対応するAppCommandでCallableを呼ぶ
+def keyboard_listener(
+    callback: Callable[[AppCommand], None],
+    h: AppStateHelper,
+    sig_param: SignalParameterHelper,
+    player_param: PlayerParameterHelper,
+):
+    """キーボードの入力を読み取り対応するAppCommandでCallableを呼ぶ
     :param callback: AppCommandを処理するコールバック関数
     :param h:
     :param sig_param:
@@ -195,6 +191,7 @@ def keyboard_listener(callback: Callable[[AppCommand], None], h: AppStateHelper,
 
 class AppCommand(Enum):
     """アプリ操作コマンド"""
+
     app_stop = auto()
 
     volume_up = auto()
@@ -209,8 +206,7 @@ class AppCommand(Enum):
     change_play_state = auto()
 
 
-def play(h: AppStateHelper, sig_param: SignalParameterHelper,
-         player_param: PlayerParameterHelper):
+def play(h: AppStateHelper, sig_param: SignalParameterHelper, player_param: PlayerParameterHelper):
     duration_sec = 1
 
     player = Player(player_param)
@@ -238,8 +234,9 @@ def play(h: AppStateHelper, sig_param: SignalParameterHelper,
         player.write(sig)
 
 
-def execute_command(app_key: AppCommand, app_state: AppState, sig_param: SignalParameterHelper,
-                    player_param: PlayerParameterHelper):
+def execute_command(
+    app_key: AppCommand, app_state: AppState, sig_param: SignalParameterHelper, player_param: PlayerParameterHelper
+):
     """AppCommandに対応するアプリ動作をする"""
 
     if app_key == AppCommand.app_stop:
@@ -266,14 +263,11 @@ def execute_command(app_key: AppCommand, app_state: AppState, sig_param: SignalP
     print_info(sig_param, player_param)
 
 
-def print_info(sig_param: SignalParameterHelper,
-               player_param: PlayerParameterHelper):
+def print_info(sig_param: SignalParameterHelper, player_param: PlayerParameterHelper):
     """CLI画面に表示される情報"""
     print(
-        f"\rvolume {player_param.volume:.2f} "
-        f"f: {sig_param.frequency} "
-        f"traction: {sig_param.traction_direction}",
-        end=""
+        f"\rvolume {player_param.volume:.2f} " f"f: {sig_param.frequency} " f"traction: {sig_param.traction_direction}",
+        end="",
     )
 
 
@@ -284,6 +278,7 @@ class AppState(ABC):
 @dataclass
 class AppStateHelper(AppState):
     """マルチプロセス時に生で値を触るのがいやなので"""
+
     _raw: DictProxy
 
     _running: InitVar[bool]
@@ -303,6 +298,7 @@ class AppStateHelper(AppState):
 @dataclass
 class SignalParameterHelper:
     """マルチプロセス時に生で値を触るのがいやなので"""
+
     _raw: DictProxy
 
     frequency: InitVar[float]
@@ -340,6 +336,7 @@ class SignalParameterHelper:
 @dataclass
 class PlayerParameterHelper:
     """マルチプロセス時に生で値を触るのがいやなので"""
+
     _raw: DictProxy
 
     volume: InitVar[float]  # = 0.5  # 0~1
@@ -383,8 +380,7 @@ class PlayerParameterHelper:
 
 def main():
     # 共有変数を使うためのManager
-    with multiprocessing.Manager() as manager, \
-            ProcessPoolExecutor() as pool:
+    with multiprocessing.Manager() as manager, ProcessPoolExecutor() as pool:
         d = manager.dict()
 
         app_state = AppStateHelper(d, True)
@@ -397,18 +393,23 @@ def main():
             execute_command,
             app_state=AppStateHelper(d, True),
             sig_param=SignalParameterHelper(d, 200, TractionDirection.up),
-            player_param=PlayerParameterHelper(d, 0.5, 44_100, 1))
+            player_param=PlayerParameterHelper(d, 0.5, 44_100, 1),
+        )
 
-        f1 = loop.run_in_executor(pool, keyboard_listener, partial_execute_command,
-                                  AppStateHelper(d, True),
-                                  SignalParameterHelper(d, 200, TractionDirection.up),
-                                  PlayerParameterHelper(d, 0.5, 44_100, 1)
-                                  )
-        f2 = loop.run_in_executor(
-            pool, play,
+        f1 = loop.run_in_executor(
+            pool,
+            keyboard_listener,
+            partial_execute_command,
             AppStateHelper(d, True),
             SignalParameterHelper(d, 200, TractionDirection.up),
-            PlayerParameterHelper(d, 0.5, 44_100, 1)
+            PlayerParameterHelper(d, 0.5, 44_100, 1),
+        )
+        f2 = loop.run_in_executor(
+            pool,
+            play,
+            AppStateHelper(d, True),
+            SignalParameterHelper(d, 200, TractionDirection.up),
+            PlayerParameterHelper(d, 0.5, 44_100, 1),
         )
 
         f = asyncio.gather(f1, f2)
