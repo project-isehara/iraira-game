@@ -3,13 +3,17 @@ from __future__ import annotations
 import asyncio
 import dataclasses
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from enum import auto, Enum
+from typing import ClassVar
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pyaudio
 import readchar
+from pyaudio import Stream
+
+from traction_wave import asymmetric_signal
 
 
 class TractionDirection(Enum):
@@ -17,22 +21,24 @@ class TractionDirection(Enum):
     up = auto()
     down = auto()
 
+    def __str__(self):
+        return self.name
 
-@dataclass()
+
+@dataclass
 class SignalParameter:
     """非対称周期信号のパラメータ"""
-    volume: float = 0.5
-    frequency: float = 200
+
+    frequency: float
     traction_direction: TractionDirection = TractionDirection.up
 
-    def replace(self, **changes) -> SignalParameter:
-        return dataclasses.replace(self, **changes)
+    def frequency_up(self):
+        self.frequency += 1
 
-    def volume_up(self):
-        self.volume += 0.1
-
-    def volume_down(self):
-        self.volume -= 0.1
+    def frequency_down(self):
+        self.frequency -= 1
+        if self.frequency < 0:
+            self.frequency = 0
 
     def traction_up(self):
         self.traction_direction = TractionDirection.up
@@ -41,73 +47,115 @@ class SignalParameter:
         self.traction_direction = TractionDirection.down
 
 
-def listen_keyboard():
-    while True:
-        key = readchar.readkey()
+@dataclass(frozen=True)
+class SignalParameter2:
+    """非対称周期信号のパラメータ"""
 
-        if key == "q":
-            loop.stop()
-            loop.close()
-            return
-        elif key == readchar.key.UP:
-            print("\rinput:: UP", end="")
-            signal_parameter.volume_up()
-        elif key == readchar.key.DOWN:
-            print("\rinput:: DOWN", end="")
-            signal_parameter.volume_down()
-        elif key == readchar.key.LEFT:
-            print("\rinput:: LEFT", end="")
-            signal_parameter.traction_up()
-        elif key == readchar.key.RIGHT:
-            print("\rinput:: RIGHT", end="")
-            signal_parameter.traction_down()
+    frequency: float
+    traction_direction: TractionDirection = TractionDirection.up
+
+    def _replace(self, **changes) -> SignalParameter2:
+        return dataclasses.replace(self, **changes)
+
+    def frequency_up(self) -> SignalParameter2:
+        return self._replace(frequency=self.frequency + 1)
+
+    def frequency_down(self) -> SignalParameter2:
+        f = self.frequency - 1
+        if f < 0:
+            f = 0
+        return self._replace(frequency=f)
+
+    def traction_up(self) -> SignalParameter2:
+        return self._replace(traction_direction=TractionDirection.up)
+
+    def traction_down(self) -> SignalParameter2:
+        return self._replace(traction_direction=TractionDirection.down)
+
+
+@dataclass(frozen=True)
+class PlayerParameter:
+    """音声プレーヤーのパラメータ"""
+
+    volume: float = 0.5  # 0~1
+    fs: ClassVar[int] = 44_100
+
+    def _replace(self, **changes) -> PlayerParameter:
+        return dataclasses.replace(self, **changes)
+
+    def volume_up(self) -> PlayerParameter:
+        volume = self.volume + 0.1
+        if volume > 1:
+            volume = 1
+        return self._replace(volume=volume)
+
+    def volume_down(self) -> PlayerParameter:
+        volume = self.volume - 0.1
+        if volume < 0:
+            volume = 0
+        return self._replace(volume=volume)
+
+
+class Player:
+
+    def __init__(self, param: PlayerParameter):
+        self._py_audio = pyaudio.PyAudio()
+        self._stream = self._py_audio.open(
+            format=pyaudio.paFloat32,
+            channels=1,
+            rate=param.fs,
+            output=True
+        )
+        self.param = param
+
+    def start(self):
+        self._stream.start_stream()
+
+    def stop(self):
+        self._stream.stop_stream()
+
+    def change_play_state(self):
+        if self._stream.is_active():
+            self.stop()
         else:
-            print(f"\rinput:: {key}", end="")
+            self.start()
+
+    def close(self):
+        self._stream.close()
+        self._py_audio.terminate()
+
+    def write(self, sig: np.ndarray):
+        self._stream.write((sig * self.param.volume).tobytes())
+
+    def volume_up(self):
+        self.param = self.param.volume_up()
+
+    def volume_down(self):
+        self.param = self.param.volume_down()
 
 
-def play_audio(is_running: Callable[[], bool]):
-    fs = 44_100  # サンプリング周波数[Hz]
-    duration_sec = 1
-    t = np.linspace(0, duration_sec, int(fs * duration_sec), endpoint=False)
-
-    p = pyaudio.PyAudio()
-    stream = p.open(format=pyaudio.paFloat32, channels=1, rate=fs, output=True)
-
-    while loop.is_running():
-
-        sig = asymmetric_signal(2 * np.pi * signal_parameter.frequency * t).astype(np.float32)
-        if signal_parameter.traction_direction == TractionDirection.down:
-            sig = -sig
-
-        stream.write((signal_parameter.volume * sig).tobytes())
-
-    stream.stop_stream()
-    stream.close()
-    p.terminate()
-
-
-def play_audio2(signal: np.ndarray, is_running: Callable[[], bool], fs: int):
-    p = pyaudio.PyAudio()
-    stream = p.open(format=pyaudio.paFloat32, channels=1, rate=fs, output=True)
+def play_audio2(callback: Callable[[Stream]], is_running: Callable[[], bool], fs: int):
+    py_audio = pyaudio.PyAudio()
+    stream = py_audio.open(format=pyaudio.paFloat32, channels=1, rate=fs, output=True)
 
     while is_running():
-        stream.write(signal.tobytes())
-
+        callback(stream)
     stream.stop_stream()
     stream.close()
-    p.terminate()
+    py_audio.terminate()
 
-
-def aaa():
-    fs = 44_100  # サンプリング周波数[Hz]
-    sig = create_asymmetric_signal(
-        signal_parameter.frequency,
-        fs,
-        signal_parameter.traction_direction,
-        1
-    )
-
-    play_audio2(sig, lambda: loop.is_running(), fs)
+    # try:
+    #     while True:
+    #         if is_running():
+    #             stream.start_stream()
+    #             callback(stream)
+    #         else:
+    #             stream.stop_stream()
+    # finally:
+    #     stream.stop_stream()
+    #     stream.close()
+    #     py_audio.terminate()
+    #
 
 
 def create_asymmetric_signal(
@@ -123,51 +171,126 @@ def create_asymmetric_signal(
     return sig
 
 
-def asymmetric_signal(x, count_anti_node: int = 4) -> np.ndarray:
-    """非対称周期信号を生成する
-    周期2πでcount_anti_node個の腹を関数。最後の腹のみ下に凸でそれ以外は上に凸となる。
-
-    :param x: 角度[rad], array_likeオブジェクトを受け取れる
-    :param count_anti_node: 非対称関数1周期の腹の数, 3以上を指定する
+def listen_keyboard_input(callback: Callable[[AppCommand], None], is_running: Callable[[bool]]):
+    """ キーボードの入力を読み取り対応する AppCommand で Callable を呼ぶ
+    :param callback: AppCommandを処理するコールバック関数
+    :param is_running:
     """
-    if not count_anti_node >= 3:
-        raise ValueError("count_anti_node expected 3 or more")
+    while is_running():
+        key = readchar.readkey()
 
-    multi_sin_abs = np.abs(np.sin(count_anti_node / 2 * x))
+        if key == "q":
+            callback(AppCommand.app_stop)
 
-    # 1周期内の最後の腹部分のみ下に凸とする
-    x_mod_2pi = x % (2 * np.pi)  # [0 2π]範囲の周波数値
-    asymmetric_x = (count_anti_node - 1) / count_anti_node * 2 * np.pi
-    multi_sin_abs[asymmetric_x < x_mod_2pi] = -multi_sin_abs[asymmetric_x < x_mod_2pi]
+        elif key == "z":
+            callback(AppCommand.change_play_state)
 
-    return multi_sin_abs
+        elif key == readchar.key.UP:
+            callback(AppCommand.volume_up)
+        elif key == readchar.key.DOWN:
+            callback(AppCommand.volume_down)
+
+        elif key == readchar.key.LEFT:
+            callback(AppCommand.traction_up)
+        elif key == readchar.key.RIGHT:
+            callback(AppCommand.traction_down)
+
+        elif key == "a":
+            callback(AppCommand.frequency_up)
+        elif key == "s":
+            callback(AppCommand.frequency_down)
 
 
-def test_asymmetric_signal():
-    """asymmetric_signal の動作確認"""
-    fs = 1001
-    duration_sec = 2.3
-    t = np.linspace(0, duration_sec, int(fs * duration_sec), endpoint=False)
+class AppCommand(Enum):
+    """アプリ操作コマンド"""
+    app_stop = auto()
 
-    sigs = [
-        asymmetric_signal(2 * np.pi * 1 * t),  # f=1,節4つ
-        asymmetric_signal(2 * np.pi * (4 / 3) * t, 3),  # f=4/3, 節3つ ==波長はf=1,節4つと同じ
-        asymmetric_signal(2 * np.pi * 1 * t, 3),  # f=1, 節3つ
-    ]
+    volume_up = auto()
+    volume_down = auto()
 
-    fig, axes = plt.subplots(len(sigs), 1)
-    for index, sig in enumerate(sigs):
-        axes[index].plot(t, sig)
-    plt.show()
+    traction_up = auto()
+    traction_down = auto()
+
+    frequency_up = auto()
+    frequency_down = auto()
+
+    change_play_state = auto()
 
 
 def main():
-    loop.run_in_executor(None, listen_keyboard)
-    loop.run_in_executor(None, play_audio)
-    loop.run_forever()
+    # アプリ内グローバル
+    sig_param = SignalParameter(frequency=200)
+    player = Player(PlayerParameter())
+
+    # player = Player(PlayerParameter())
+
+    def print_info():
+        """CLI画面に表示される情報"""
+        print(
+            f"\rvolume {player.param.volume:.2f} "
+            f"f: {sig_param.frequency} "
+            f"traction: {sig_param.traction_direction}",
+            end=""
+        )
+
+    def execute_command(app_key: AppCommand):
+        """AppCommandに対応するアプリ動作をする"""
+
+        if app_key == AppCommand.app_stop:
+            is_active_listen_keyboard = False
+            player.close()
+            loop.stop()
+            loop.close()
+
+        elif app_key == AppCommand.change_play_state:
+            player.change_play_state()
+
+        elif app_key == AppCommand.volume_up:
+            player.volume_up()
+        elif app_key == AppCommand.volume_down:
+            player.volume_down()
+
+        elif app_key == AppCommand.traction_up:
+            sig_param.traction_up()
+        elif app_key == AppCommand.traction_down:
+            sig_param.traction_down()
+
+        elif app_key == AppCommand.frequency_up:
+            sig_param.frequency_up()
+        elif app_key == AppCommand.frequency_down:
+            sig_param.frequency_down()
+
+        print_info()
+
+    def play():
+        player.start()
+        while loop.is_running():
+            sig = create_asymmetric_signal(
+                sig_param.frequency,
+                player.param.fs,
+                sig_param.traction_direction,
+                1
+            )
+            player.write(sig)
+
+    def is_active_listen_keyboards():
+        return is_active_listen_keyboard
+
+    print_info()
+    is_active_listen_keyboard = True
+
+    # 起動
+    with ThreadPoolExecutor() as pool:
+        f1 = loop.run_in_executor(pool, listen_keyboard_input, execute_command,
+                                  is_active_listen_keyboards())
+        f2 = loop.run_in_executor(pool, play)
+        # f = asyncio.gather(f1, f2)
+    # loop.run_in_executor(None, play_audio, lambda: loop.is_running())
+    # loop.run_in_executor(None, play_audio2, sound, is_playing, player_param.fs)
+    # loop.run_forever()
+    loop.run_until_complete(f1)
 
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
-    signal_parameter = SignalParameter()
     main()
