@@ -6,7 +6,7 @@ import numpy as np
 
 def asymmetric_signal(x, count_anti_node: int = 4) -> np.ndarray:
     """非対称周期信号を生成する
-    周期2πでcount_anti_node個の腹を関数。最後の腹のみ下に凸でそれ以外は上に凸となる。
+    周期2πでcount_anti_node個の腹を持つ関数。最後の腹のみ下に凸でそれ以外は上に凸となる。
 
     :param x: 角度[rad], array_likeオブジェクトを受け取れる
     :param count_anti_node: 非対称関数1周期の腹の数, 3以上を指定する
@@ -17,7 +17,7 @@ def asymmetric_signal(x, count_anti_node: int = 4) -> np.ndarray:
     multi_sin_abs = np.abs(np.sin(count_anti_node / 2 * x))
 
     # 1周期内の最後の腹部分のみ下に凸とする
-    x_mod_2pi = x % (2 * np.pi)  # [0 2π]範囲の周波数値
+    x_mod_2pi = x % (2 * np.pi)  # [0 2π]範囲に正規化した角度 [π, 3π, 2π+0.4]→[π, π, 0.4]
     asymmetric_x = (count_anti_node - 1) / count_anti_node * 2 * np.pi
     multi_sin_abs[asymmetric_x < x_mod_2pi] = -multi_sin_abs[asymmetric_x < x_mod_2pi]
 
@@ -26,19 +26,20 @@ def asymmetric_signal(x, count_anti_node: int = 4) -> np.ndarray:
 
 def test_asymmetric_signal():
     """asymmetric_signal の動作確認"""
-    fs = 1001
+    fs = 10000
     duration_sec = 2.3
     t = np.linspace(0, duration_sec, int(fs * duration_sec), endpoint=False)
 
     sigs = [
         asymmetric_signal(2 * np.pi * 1 * t),  # f=1,節4つ
-        asymmetric_signal(2 * np.pi * (4 / 3) * t, 3),  # f=4/3, 節3つ ==波長はf=1,節4つと同じ
         asymmetric_signal(2 * np.pi * 1 * t, 3),  # f=1, 節3つ
+        asymmetric_signal(2 * np.pi * (4 / 3) * t, 3),  # f=4/3, 節3つ ==波長はf=1,節4つと同じ
     ]
 
     fig, axes = plt.subplots(len(sigs), 1)
     for index, sig in enumerate(sigs):
         axes[index].plot(t, sig)
+
     plt.show()
 
 
