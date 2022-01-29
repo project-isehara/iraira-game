@@ -1,210 +1,18 @@
 from __future__ import annotations
 
 import asyncio
-import dataclasses
 import multiprocessing
 from abc import ABC
-from collections.abc import Callable
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import InitVar, dataclass
-from enum import Enum, auto
 from functools import partial
 from multiprocessing.managers import DictProxy
-from typing import ClassVar
 
 import numpy as np
-import pyaudio
-import readchar
-
+from keyboard import AppCommand, keyboard_listener
+from state import AppStateHelper
+from traction_contraller import Player, TractionDirection
 from traction_wave import asymmetric_signal
-
-
-class TractionDirection(Enum):
-    """牽引力方向"""
-
-    up = auto()
-    down = auto()
-
-    def __str__(self):
-        return self.name
-
-
-@dataclass
-class SignalParameter:
-    """非対称周期信号のパラメータ"""
-
-    frequency: float
-    traction_direction: TractionDirection = TractionDirection.up
-
-    def frequency_up(self):
-        self.frequency += 1
-
-    def frequency_down(self):
-        self.frequency -= 1
-        if self.frequency < 0:
-            self.frequency = 0
-
-    def traction_up(self):
-        self.traction_direction = TractionDirection.up
-
-    def traction_down(self):
-        self.traction_direction = TractionDirection.down
-
-
-@dataclass(frozen=True)
-class SignalParameterImmutable:
-    """非対称周期信号のパラメータ"""
-
-    frequency: float
-    traction_direction: TractionDirection = TractionDirection.up
-
-    def _replace(self, **changes) -> SignalParameterImmutable:
-        return dataclasses.replace(self, **changes)
-
-    def frequency_up(self) -> SignalParameterImmutable:
-        return self._replace(frequency=self.frequency + 1)
-
-    def frequency_down(self) -> SignalParameterImmutable:
-        f = self.frequency - 1
-        if f < 0:
-            f = 0
-        return self._replace(frequency=f)
-
-    def traction_up(self) -> SignalParameterImmutable:
-        return self._replace(traction_direction=TractionDirection.up)
-
-    def traction_down(self) -> SignalParameterImmutable:
-        return self._replace(traction_direction=TractionDirection.down)
-
-
-@dataclass
-class PlayerParameter:
-    """音声プレーヤーのパラメータ"""
-
-    volume: float = 0.5  # 0~1
-    fs: ClassVar[int] = 44_100
-
-    def volume_up(self):
-        self.volume += 0.1
-        if self.volume > 1:
-            self.volume = 1
-
-    def volume_down(self):
-        self.volume -= 0.1
-        if self.volume < 0:
-            self.volume = 0
-
-
-@dataclass(frozen=True)
-class PlayerParameterImmutable:
-    """音声プレーヤーのパラメータ"""
-
-    volume: float = 0.5  # 0~1
-    fs: ClassVar[int] = 44_100
-
-    def _replace(self, **changes) -> PlayerParameterImmutable:
-        return dataclasses.replace(self, **changes)
-
-    def volume_up(self) -> PlayerParameterImmutable:
-        volume = self.volume + 0.1
-        if volume > 1:
-            volume = 1
-        return self._replace(volume=volume)
-
-    def volume_down(self) -> PlayerParameterImmutable:
-        volume = self.volume - 0.1
-        if volume < 0:
-            volume = 0
-        return self._replace(volume=volume)
-
-
-class Player:
-    """音声プレーヤーの制御"""
-
-    def __init__(self, param: PlayerParameter):
-        self._py_audio = pyaudio.PyAudio()
-        self._stream = self._py_audio.open(format=pyaudio.paFloat32, channels=1, rate=param.fs, output=True)
-        self.param = param
-
-    def start(self):
-        self._stream.start_stream()
-
-    def stop(self):
-        self._stream.stop_stream()
-
-    def change_play_state(self):
-        if self._stream.is_active():
-            self.stop()
-        else:
-            self.start()
-
-    def close(self):
-        self._stream.close()
-        self._py_audio.terminate()
-
-    def write(self, sig: np.ndarray):
-        self._stream.write((sig * self.param.volume).tobytes())
-
-    def volume_up(self):
-        self.param.volume_up()
-
-    def volume_down(self):
-        self.param.volume_down()
-
-
-def keyboard_listener(
-    callback: Callable[[AppCommand], None],
-    h: AppStateHelper,
-    sig_param: SignalParameterHelper,
-    player_param: PlayerParameterHelper,
-):
-    """キーボードの入力を読み取り対応するAppCommandでCallableを呼ぶ
-    :param callback: AppCommandを処理するコールバック関数
-    :param h:
-    :param sig_param:
-    """
-
-    while h.running:
-        key = readchar.readkey()  # ブロッキング
-        if key == "q":
-            h.running = False
-            callback(AppCommand.app_stop)
-            return
-
-        elif key == "z":
-            callback(AppCommand.change_play_state)
-
-        elif key == "d":
-            callback(AppCommand.volume_up)
-        elif key == "f":
-            callback(AppCommand.volume_down)
-
-        elif key == "x":
-            callback(AppCommand.traction_up)
-        elif key == "c":
-            callback(AppCommand.traction_down)
-
-        elif key == "a":
-            callback(AppCommand.frequency_up)
-        elif key == "s":
-            callback(AppCommand.frequency_down)
-
-
-class AppCommand(Enum):
-    """アプリ操作コマンド"""
-
-    app_stop = auto()
-
-    volume_up = auto()
-    volume_down = auto()
-
-    traction_up = auto()
-    traction_down = auto()
-
-    frequency_up = auto()
-    frequency_down = auto()
-
-    change_play_state = auto()
 
 
 def play(h: AppStateHelper, sig_param: SignalParameterHelper, player_param: PlayerParameterHelper):
@@ -274,26 +82,6 @@ def print_info(sig_param: SignalParameterHelper, player_param: PlayerParameterHe
 
 class AppState(ABC):
     running: bool
-
-
-@dataclass
-class AppStateHelper(AppState):
-    """マルチプロセス時に生で値を触るのがいやなので"""
-
-    _raw: DictProxy
-
-    _running: InitVar[bool]
-
-    def __post_init__(self, _running: bool):
-        self._raw["is_running"] = _running
-
-    @property
-    def running(self) -> bool:
-        return self._raw["is_running"]
-
-    @running.setter
-    def running(self, value: bool):
-        self._raw["is_running"] = value
 
 
 @dataclass
@@ -402,8 +190,6 @@ def main():
             keyboard_listener,
             partial_execute_command,
             AppStateHelper(d, True),
-            SignalParameterHelper(d, 200, TractionDirection.up),
-            PlayerParameterHelper(d, 0.5, 44_100, 1),
         )
         f2 = loop.run_in_executor(
             pool,
