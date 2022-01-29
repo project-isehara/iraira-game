@@ -24,7 +24,7 @@ def asymmetric_signal(x, count_anti_node: int = 4) -> np.ndarray:
     return multi_sin_abs
 
 
-def test_asymmetric_signal():
+def show_asymmetric_signal():
     """asymmetric_signal の動作確認"""
     fs = 10000
     duration_sec = 2.3
@@ -44,4 +44,4 @@ def test_asymmetric_signal():
 
 
 if __name__ == "__main__":
-    test_asymmetric_signal()
+    show_asymmetric_signal()
