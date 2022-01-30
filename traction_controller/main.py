@@ -203,7 +203,7 @@ def main():
             PlayerParameterHelper(d, 0.5, 44_100, 1),
         )
 
-        f = asyncio.gather(f1, f2)
+        f = asyncio.gather(f1, f2, loop=loop, return_exceptions=True)
         loop.run_until_complete(f)
 
 
