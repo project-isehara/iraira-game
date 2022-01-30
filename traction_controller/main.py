@@ -77,7 +77,9 @@ def execute_command(
 def print_info(sig_param: SignalParameterHelper, player_param: PlayerParameterHelper):
     """CLI画面に表示される情報"""
     print(
-        f"\rvolume {player_param.volume:.2f} " f"f: {sig_param.frequency} " f"traction: {sig_param.traction_direction}",
+        f"\rvolume {player_param.volume:.2f} "
+        f"f: {sig_param.frequency} "
+        f"traction: {sig_param.traction_direction:>4}",
         end="",
     )
 
