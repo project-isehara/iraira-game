@@ -9,6 +9,7 @@ class AppCommand(Enum):
     """アプリ操作コマンド"""
 
     app_stop = auto()
+    pause = auto()
 
     volume_up = auto()
     volume_down = auto()
@@ -18,8 +19,6 @@ class AppCommand(Enum):
 
     frequency_up = auto()
     frequency_down = auto()
-
-    change_play_state = auto()
 
 
 def keyboard_listener(
@@ -39,7 +38,7 @@ def keyboard_listener(
             return
 
         elif key == readchar.key.SPACE:
-            callback(AppCommand.change_play_state)
+            callback(AppCommand.pause)
 
         elif key == readchar.key.UP:
             callback(AppCommand.volume_up)

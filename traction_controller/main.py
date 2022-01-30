@@ -53,7 +53,7 @@ def execute_command(
     if app_key == AppCommand.app_stop:
         app_state.running = False
 
-    elif app_key == AppCommand.change_play_state:
+    elif app_key == AppCommand.pause:
         player_param.change_play_state()
 
     elif app_key == AppCommand.volume_up:
