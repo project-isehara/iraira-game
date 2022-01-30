@@ -2,43 +2,11 @@ from __future__ import annotations
 
 import dataclasses
 from dataclasses import dataclass
-from enum import Enum, auto
 from typing import ClassVar
 
 import numpy as np
 import pyaudio
-
-
-class TractionDirection(Enum):
-    """牽引力方向"""
-
-    up = auto()
-    down = auto()
-
-    def __str__(self):
-        return self.name
-
-
-@dataclass
-class SignalParameter:
-    """非対称周期信号のパラメータ"""
-
-    frequency: float
-    traction_direction: TractionDirection = TractionDirection.up
-
-    def frequency_up(self):
-        self.frequency += 1
-
-    def frequency_down(self):
-        self.frequency -= 1
-        if self.frequency < 0:
-            self.frequency = 0
-
-    def traction_up(self):
-        self.traction_direction = TractionDirection.up
-
-    def traction_down(self):
-        self.traction_direction = TractionDirection.down
+from state import PlayerState, TractionDirection
 
 
 @dataclass(frozen=True)
@@ -67,24 +35,6 @@ class SignalParameterImmutable:
         return self._replace(traction_direction=TractionDirection.down)
 
 
-@dataclass
-class PlayerParameter:
-    """音声プレーヤーのパラメータ"""
-
-    volume: float = 0.5  # 0~1
-    fs: ClassVar[int] = 44_100
-
-    def volume_up(self):
-        self.volume += 0.1
-        if self.volume > 1:
-            self.volume = 1
-
-    def volume_down(self):
-        self.volume -= 0.1
-        if self.volume < 0:
-            self.volume = 0
-
-
 @dataclass(frozen=True)
 class PlayerParameterImmutable:
     """音声プレーヤーのパラメータ"""
@@ -111,7 +61,7 @@ class PlayerParameterImmutable:
 class Player:
     """音声プレーヤーの制御"""
 
-    def __init__(self, param: PlayerParameter):
+    def __init__(self, param: PlayerState):
         self._py_audio = pyaudio.PyAudio()
         self._stream = self._py_audio.open(format=pyaudio.paFloat32, channels=1, rate=param.fs, output=True)
         self.param = param

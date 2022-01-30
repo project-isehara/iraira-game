@@ -2,21 +2,18 @@ from __future__ import annotations
 
 import asyncio
 import multiprocessing
-from abc import ABC
 from concurrent.futures import ProcessPoolExecutor
-from dataclasses import InitVar, dataclass
+from dataclasses import dataclass
 from functools import partial
-from multiprocessing.managers import DictProxy
 
 import numpy as np
 from keyboard import AppCommand, keyboard_listener
-from state import AppStateHelper
+from state import AppState, PlayerState, SignalParam
 from traction_contraller import Player, TractionDirection
 from traction_wave import traction_wave
 
 
-def play(h: AppStateHelper, sig_param: SignalParameterHelper, player_param: PlayerParameterHelper):
-
+def play(app_state: AppState, sig_param: SignalParam, player_param: PlayerState):
     player = Player(player_param)
     player.start()
 
@@ -34,8 +31,8 @@ def play(h: AppStateHelper, sig_param: SignalParameterHelper, player_param: Play
             sig = -sig
         return sig
 
-    while h.running:
-        if player_param.state == 0:
+    while app_state.is_running:
+        if not player_param.is_running:
             player.stop()
             continue
         else:
@@ -77,32 +74,36 @@ def execute_command(
 def print_info(sig_param: SignalParameterHelper, player_param: PlayerParameterHelper):
     """CLI画面に表示される情報"""
     print(
-        f"\rvolume {player_param.volume:.2f} "
-        f"f: {sig_param.frequency} "
+        f"\rvolume {player_param.volume:.1f} "
+        f"f: {sig_param.frequency:>4} "
         f"traction: {sig_param.traction_direction:>4}",
         end="",
     )
 
 
-class AppState(ABC):
-    running: bool
+@dataclass
+class AppStateHelper:
+    """マルチプロセス時に生で値を触るのがいやなので"""
+
+    _raw: dict
+
+    @property
+    def is_running(self) -> bool:
+        return self._raw["is_running"]
+
+    @is_running.setter
+    def is_running(self, value: bool):
+        self._raw["is_running"] = value
 
 
 @dataclass
 class SignalParameterHelper:
     """マルチプロセス時に生で値を触るのがいやなので"""
 
-    _raw: DictProxy
-
-    frequency: InitVar[float]
-    traction_direction: InitVar[TractionDirection]
-
-    def __post_init__(self, frequency: float, traction_direction: TractionDirection):
-        self._raw["frequency"] = frequency
-        self._raw["traction_direction"] = traction_direction
+    _raw: dict
 
     @property
-    def frequency(self) -> float:
+    def frequency(self) -> int:
         return self._raw["frequency"]
 
     def frequency_up(self):
@@ -110,10 +111,10 @@ class SignalParameterHelper:
 
     def frequency_down(self):
         f = self._raw["frequency"]
-        f -= 1
-        if f < 0:
-            f = 0
-        self._raw["frequency"] = f
+        assert f >= 20
+        if f == 20:
+            return
+        self._raw["frequency"] = f - 1
 
     @property
     def traction_direction(self) -> TractionDirection:
@@ -125,29 +126,26 @@ class SignalParameterHelper:
     def traction_down(self):
         self._raw["traction_direction"] = TractionDirection.down
 
+    @staticmethod
+    def setup_dict(d: dict, frequency: int = 63, direction: TractionDirection = TractionDirection.up) -> dict:
+        d["frequency"] = frequency
+        d["traction_direction"] = direction
+        return d
+
 
 @dataclass
 class PlayerParameterHelper:
     """マルチプロセス時に生で値を触るのがいやなので"""
 
-    _raw: DictProxy
-
-    volume: InitVar[float]  # = 0.5  # 0~1
-    fs: InitVar[int]  # = 44_100
-    state: InitVar[int]  # 0: stop 1:running
-
-    def __post_init__(self, volume: float, fs: int, state: int):
-        self._raw["volume"] = volume
-        self._raw["fs"] = fs
-        self._raw["state"] = state
+    _raw: dict
 
     @property
     def fs(self) -> int:
         return self._raw["fs"]
 
     @property
-    def state(self) -> int:
-        return self._raw["state"]
+    def is_running(self) -> bool:
+        return self._raw["is_running"]
 
     @property
     def volume(self) -> float:
@@ -168,7 +166,14 @@ class PlayerParameterHelper:
         self._raw["volume"] = v
 
     def change_play_state(self):
-        self._raw["state"] = not self._raw["state"]
+        self._raw["is_running"] = not self._raw["is_running"]
+
+    @staticmethod
+    def setup_dict(d: dict, fs: int = 44_100, volume: float = 0.5, is_running: bool = True) -> dict:
+        d["fs"] = fs
+        d["volume"] = volume
+        d["is_running"] = is_running
+        return d
 
 
 def main():
@@ -176,33 +181,36 @@ def main():
 
     # 共有変数を使うためのManager
     with multiprocessing.Manager() as manager, ProcessPoolExecutor() as pool:
-        d = manager.dict()
+        app_state_dict = manager.dict()
+        player_state_dict = PlayerParameterHelper.setup_dict(manager.dict())
+        signal_param_dict = SignalParameterHelper.setup_dict(manager.dict())
 
-        app_state = AppStateHelper(d, True)
+        AppStateHelper(app_state_dict).is_running = True
 
-        sig_param = SignalParameterHelper(d, 200, TractionDirection.up)
-        player_param = PlayerParameterHelper(d, 0.5, 44_100, 1)
-        print_info(sig_param, player_param)
+        print_info(
+            sig_param=SignalParameterHelper(signal_param_dict),
+            player_param=PlayerParameterHelper(player_state_dict),
+        )
 
         partial_execute_command = partial(
             execute_command,
-            app_state=AppStateHelper(d, True),
-            sig_param=SignalParameterHelper(d, 200, TractionDirection.up),
-            player_param=PlayerParameterHelper(d, 0.5, 44_100, 1),
+            app_state=AppStateHelper(app_state_dict),
+            sig_param=SignalParameterHelper(signal_param_dict),
+            player_param=PlayerParameterHelper(player_state_dict),
         )
 
         f1 = loop.run_in_executor(
             pool,
             keyboard_listener,
             partial_execute_command,
-            AppStateHelper(d, True),
+            AppStateHelper(app_state_dict),
         )
         f2 = loop.run_in_executor(
             pool,
             play,
-            AppStateHelper(d, True),
-            SignalParameterHelper(d, 200, TractionDirection.up),
-            PlayerParameterHelper(d, 0.5, 44_100, 1),
+            AppStateHelper(app_state_dict),
+            SignalParameterHelper(signal_param_dict),
+            PlayerParameterHelper(player_state_dict),
         )
 
         f = asyncio.gather(f1, f2, loop=loop, return_exceptions=True)

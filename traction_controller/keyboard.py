@@ -2,7 +2,7 @@ from collections.abc import Callable
 from enum import Enum, auto
 
 import readchar
-from state import AppStateHelper
+from state import AppState
 
 
 class AppCommand(Enum):
@@ -23,17 +23,19 @@ class AppCommand(Enum):
 
 def keyboard_listener(
     callback: Callable[[AppCommand], None],
-    h: AppStateHelper,
+    app_state: AppState,
 ):
     """キーボードの入力を読み取り対応するAppCommandでCallableを呼ぶ
     :param callback: AppCommandを処理するコールバック関数
-    :param h:
+    :param app_state:
     """
 
-    while h.running:
+    while app_state.is_running:
         key = readchar.readkey()  # ブロッキング
+        # print(ord(key))
+
         if key == "q":
-            h.running = False
+            app_state.is_running = False
             callback(AppCommand.app_stop)
             return
 

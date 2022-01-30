@@ -1,22 +1,56 @@
-from dataclasses import InitVar, dataclass
-from multiprocessing.managers import DictProxy
+from __future__ import annotations
+
+from enum import Enum, auto
+from typing import Protocol
 
 
-@dataclass
-class AppStateHelper:
-    """マルチプロセス時に生で値を触るのがいやなので"""
+class AppState(Protocol):
+    """アプリ動作中の状態"""
 
-    _raw: DictProxy
+    is_running: bool
 
-    _running: InitVar[bool]
 
-    def __post_init__(self, _running: bool):
-        self._raw["is_running"] = _running
+class PlayerState(Protocol):
+    """音声プレーヤーの状態"""
 
-    @property
-    def running(self) -> bool:
-        return self._raw["is_running"]
+    fs: int
+    volume: bool
+    is_running: bool
 
-    @running.setter
-    def running(self, value: bool):
-        self._raw["is_running"] = value
+    def volume_up(self):
+        ...
+
+    def volume_down(self):
+        ...
+
+    def change_play_state(self):
+        ...
+
+
+class SignalParam(Protocol):
+    """非対称周期信号のパラメータ"""
+
+    frequency: int
+    traction_direction: TractionDirection
+
+    def frequency_up(self):
+        ...
+
+    def frequency_down(self):
+        ...
+
+    def traction_up(self):
+        ...
+
+    def traction_down(self):
+        ...
+
+
+class TractionDirection(Enum):
+    """牽引力方向"""
+
+    up = auto()
+    down = auto()
+
+    def __str__(self):
+        return self.name
