@@ -40,17 +40,17 @@ def keyboard_listener(
         elif key == readchar.key.SPACE:
             callback(AppCommand.pause)
 
-        elif key == readchar.key.UP:
+        elif key in (readchar.key.UP, "s"):
             callback(AppCommand.volume_up)
-        elif key == readchar.key.DOWN:
+        elif key in (readchar.key.DOWN, "x"):
             callback(AppCommand.volume_down)
 
-        elif key == readchar.key.LEFT:
+        elif key in (readchar.key.LEFT, "d"):
             callback(AppCommand.traction_up)
-        elif key == readchar.key.RIGHT:
+        elif key in (readchar.key.RIGHT, "c"):
             callback(AppCommand.traction_down)
 
         elif key == "a":
             callback(AppCommand.frequency_up)
-        elif key == "s":
+        elif key == "z":
             callback(AppCommand.frequency_down)
