@@ -7,8 +7,8 @@ from dataclasses import dataclass
 from functools import partial
 
 from keyboard import AppCommand, keyboard_listener
+from player import PlayerState, SignalParam, TractionDirection, play
 from state import AppState
-from traction_contraller import PlayerState, SignalParam, TractionDirection, play
 
 
 @dataclass
