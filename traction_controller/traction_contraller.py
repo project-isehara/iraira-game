@@ -1,61 +1,66 @@
 from __future__ import annotations
 
-import dataclasses
-from dataclasses import dataclass
-from typing import ClassVar
+from enum import Enum, auto
+from functools import lru_cache
+from typing import Protocol
 
 import numpy as np
 import pyaudio
-from state import PlayerState, TractionDirection
+from state import AppState
+from traction_wave import traction_wave
 
 
-@dataclass(frozen=True)
-class SignalParameterImmutable:
+class PlayerState(Protocol):
+    """音声プレーヤーの状態"""
+
+    fs: int
+    volume: bool
+    is_running: bool
+
+    def volume_up(self):
+        ...
+
+    def volume_down(self):
+        ...
+
+    def change_play_state(self):
+        ...
+
+
+class SignalParam(Protocol):
     """非対称周期信号のパラメータ"""
 
-    frequency: float
-    traction_direction: TractionDirection = TractionDirection.up
+    frequency: int
+    traction_direction: TractionDirection
+    count_anti_node: int
 
-    def _replace(self, **changes) -> SignalParameterImmutable:
-        return dataclasses.replace(self, **changes)
+    def frequency_up(self):
+        ...
 
-    def frequency_up(self) -> SignalParameterImmutable:
-        return self._replace(frequency=self.frequency + 1)
+    def frequency_down(self):
+        ...
 
-    def frequency_down(self) -> SignalParameterImmutable:
-        f = self.frequency - 1
-        if f < 0:
-            f = 0
-        return self._replace(frequency=f)
+    def traction_up(self):
+        ...
 
-    def traction_up(self) -> SignalParameterImmutable:
-        return self._replace(traction_direction=TractionDirection.up)
+    def traction_down(self):
+        ...
 
-    def traction_down(self) -> SignalParameterImmutable:
-        return self._replace(traction_direction=TractionDirection.down)
+    def count_anti_node_up(self):
+        ...
+
+    def count_anti_node_down(self):
+        ...
 
 
-@dataclass(frozen=True)
-class PlayerParameterImmutable:
-    """音声プレーヤーのパラメータ"""
+class TractionDirection(Enum):
+    """牽引力方向"""
 
-    volume: float = 0.5  # 0~1
-    fs: ClassVar[int] = 44_100
+    up = auto()
+    down = auto()
 
-    def _replace(self, **changes) -> PlayerParameterImmutable:
-        return dataclasses.replace(self, **changes)
-
-    def volume_up(self) -> PlayerParameterImmutable:
-        volume = self.volume + 0.1
-        if volume > 1:
-            volume = 1
-        return self._replace(volume=volume)
-
-    def volume_down(self) -> PlayerParameterImmutable:
-        volume = self.volume - 0.1
-        if volume < 0:
-            volume = 0
-        return self._replace(volume=volume)
+    def __str__(self):
+        return self.name
 
 
 class Player:
@@ -85,8 +90,48 @@ class Player:
     def write(self, sig: np.ndarray):
         self._stream.write((sig * self.param.volume).tobytes())
 
-    def volume_up(self):
-        self.param.volume_up()
+    def __enter__(self):
+        return self
 
-    def volume_down(self):
-        self.param.volume_down()
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+
+@lru_cache(maxsize=1)
+def create_traction_wave(
+    fs: int, frequency: int, traction_direction: TractionDirection, count_anti_node: int = 4
+) -> np.ndarray:
+
+    # 生成波形の長さが波形周波数の整数倍になるように調整
+    duration_sec = 0.1
+    duration_sec = round(duration_sec * frequency) / frequency
+
+    # 波形生成
+    t = np.linspace(0, duration_sec, int(fs * duration_sec), endpoint=False)
+    sig = traction_wave(2 * np.pi * frequency * t, count_anti_node).astype(np.float32)
+
+    # 牽引力方向の調整
+    if traction_direction == TractionDirection.down:
+        sig = -sig
+
+    return sig
+
+
+def play(app_state: AppState, player_param: PlayerState, sig_param: SignalParam):
+    with Player(player_param) as player:
+        player.start()
+
+        while app_state.is_running:
+            if not player_param.is_running:
+                player.stop()
+                continue
+            else:
+                player.start()
+
+            sig = create_traction_wave(
+                player_param.fs,
+                sig_param.frequency,
+                sig_param.traction_direction,
+                sig_param.count_anti_node,
+            )
+            player.write(sig)

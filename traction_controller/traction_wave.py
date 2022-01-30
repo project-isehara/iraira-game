@@ -5,11 +5,11 @@ import numpy as np
 
 
 def traction_wave(x, count_anti_node: int = 4) -> np.ndarray:
-    """非対称周期信号を生成する
+    """牽引力波形を生成する
     周期2πでcount_anti_node個の腹を持つ関数。最後の腹のみ下に凸でそれ以外は上に凸となる。
 
     :param x: 角度[rad], array_likeオブジェクトを受け取れる
-    :param count_anti_node: 非対称関数1周期の腹の数, 3以上を指定する
+    :param count_anti_node: 1周期の腹の数, 3以上を指定する
     """
     if not count_anti_node >= 3:
         raise ValueError("count_anti_node expected 3 or more")

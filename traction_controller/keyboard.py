@@ -20,6 +20,9 @@ class AppCommand(Enum):
     frequency_up = auto()
     frequency_down = auto()
 
+    anti_node_up = auto()
+    anti_node_down = auto()
+
 
 def keyboard_listener(
     callback: Callable[[AppCommand], None],
@@ -27,7 +30,7 @@ def keyboard_listener(
 ):
     """キーボードの入力を読み取り対応するAppCommandでCallableを呼ぶ
     :param callback: AppCommandを処理するコールバック関数
-    :param app_state:
+    :param app_state: アプリ動作状態
     """
 
     while app_state.is_running:
@@ -42,9 +45,9 @@ def keyboard_listener(
         elif key == readchar.key.SPACE:
             callback(AppCommand.pause)
 
-        elif key in (readchar.key.UP, "s"):
+        elif key in (readchar.key.UP, "a"):
             callback(AppCommand.volume_up)
-        elif key in (readchar.key.DOWN, "x"):
+        elif key in (readchar.key.DOWN, "z"):
             callback(AppCommand.volume_down)
 
         elif key in (readchar.key.LEFT, "d"):
@@ -52,7 +55,12 @@ def keyboard_listener(
         elif key in (readchar.key.RIGHT, "c"):
             callback(AppCommand.traction_down)
 
-        elif key == "a":
+        elif key == "s":
             callback(AppCommand.frequency_up)
-        elif key == "z":
+        elif key == "x":
             callback(AppCommand.frequency_down)
+
+        elif key == "f":
+            callback(AppCommand.anti_node_up)
+        elif key == "v":
+            callback(AppCommand.anti_node_down)

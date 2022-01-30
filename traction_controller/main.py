@@ -6,84 +6,16 @@ from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from functools import partial
 
-import numpy as np
 from keyboard import AppCommand, keyboard_listener
-from state import AppState, PlayerState, SignalParam
-from traction_contraller import Player, TractionDirection
-from traction_wave import traction_wave
-
-
-def play(app_state: AppState, sig_param: SignalParam, player_param: PlayerState):
-    player = Player(player_param)
-    player.start()
-
-    def create_asymmetric_signal() -> np.ndarray:
-        fs = player_param.fs
-        frequency = sig_param.frequency
-        traction_direction = sig_param.traction_direction
-
-        duration_sec = 0.2
-        duration_sec = round(duration_sec * frequency) / frequency
-
-        t = np.linspace(0, duration_sec, int(fs * duration_sec), endpoint=False)
-        sig = traction_wave(2 * np.pi * frequency * t).astype(np.float32)
-        if traction_direction == TractionDirection.down:
-            sig = -sig
-        return sig
-
-    while app_state.is_running:
-        if not player_param.is_running:
-            player.stop()
-            continue
-        else:
-            player.start()
-
-        sig = create_asymmetric_signal()
-        player.write(sig)
-
-
-def execute_command(
-    app_key: AppCommand, app_state: AppState, sig_param: SignalParameterHelper, player_param: PlayerParameterHelper
-):
-    """AppCommandに対応するアプリ動作をする"""
-
-    if app_key == AppCommand.app_stop:
-        app_state.running = False
-
-    elif app_key == AppCommand.pause:
-        player_param.change_play_state()
-
-    elif app_key == AppCommand.volume_up:
-        player_param.volume_up()
-    elif app_key == AppCommand.volume_down:
-        player_param.volume_down()
-
-    elif app_key == AppCommand.traction_up:
-        sig_param.traction_up()
-    elif app_key == AppCommand.traction_down:
-        sig_param.traction_down()
-
-    elif app_key == AppCommand.frequency_up:
-        sig_param.frequency_up()
-    elif app_key == AppCommand.frequency_down:
-        sig_param.frequency_down()
-
-    print_info(sig_param, player_param)
-
-
-def print_info(sig_param: SignalParameterHelper, player_param: PlayerParameterHelper):
-    """CLI画面に表示される情報"""
-    print(
-        f"\rvolume {player_param.volume:.1f} "
-        f"f: {sig_param.frequency:>4} "
-        f"traction: {sig_param.traction_direction:>4}",
-        end="",
-    )
+from state import AppState
+from traction_contraller import PlayerState, SignalParam, TractionDirection, play
 
 
 @dataclass
-class AppStateHelper:
-    """マルチプロセス時に生で値を触るのがいやなので"""
+class AppStateMultiProcessing:
+    """MultiProcessingで使用できる AppState の実装クラス
+    状態を扱うプロセスごとにインスタンスを生成しなければいけない
+    """
 
     _raw: dict
 
@@ -97,45 +29,10 @@ class AppStateHelper:
 
 
 @dataclass
-class SignalParameterHelper:
-    """マルチプロセス時に生で値を触るのがいやなので"""
-
-    _raw: dict
-
-    @property
-    def frequency(self) -> int:
-        return self._raw["frequency"]
-
-    def frequency_up(self):
-        self._raw["frequency"] += 1
-
-    def frequency_down(self):
-        f = self._raw["frequency"]
-        assert f >= 20
-        if f == 20:
-            return
-        self._raw["frequency"] = f - 1
-
-    @property
-    def traction_direction(self) -> TractionDirection:
-        return self._raw["traction_direction"]
-
-    def traction_up(self):
-        self._raw["traction_direction"] = TractionDirection.up
-
-    def traction_down(self):
-        self._raw["traction_direction"] = TractionDirection.down
-
-    @staticmethod
-    def setup_dict(d: dict, frequency: int = 63, direction: TractionDirection = TractionDirection.up) -> dict:
-        d["frequency"] = frequency
-        d["traction_direction"] = direction
-        return d
-
-
-@dataclass
-class PlayerParameterHelper:
-    """マルチプロセス時に生で値を触るのがいやなので"""
+class PlayerStateMultiProcessing:
+    """MultiProcessingで使用できる PlayerState の実装クラス
+    状態を扱うプロセスごとにインスタンスを生成しなければいけない
+    """
 
     _raw: dict
 
@@ -176,41 +73,150 @@ class PlayerParameterHelper:
         return d
 
 
+@dataclass
+class SignalParamMultiProcessing:
+    """MultiProcessingで使用できる SignalParam の実装クラス
+    状態を扱うプロセスごとにインスタンスを生成しなければいけない
+    """
+
+    _raw: dict
+
+    @property
+    def frequency(self) -> int:
+        return self._raw["frequency"]
+
+    def frequency_up(self):
+        f = self._raw["frequency"]
+        assert f <= 1000
+        if f == 1000:
+            return
+        self._raw["frequency"] = f + 1
+
+    def frequency_down(self):
+        f = self._raw["frequency"]
+        assert f >= 20
+        if f == 20:
+            return
+        self._raw["frequency"] = f - 1
+
+    @property
+    def traction_direction(self) -> TractionDirection:
+        return self._raw["traction_direction"]
+
+    def traction_up(self):
+        self._raw["traction_direction"] = TractionDirection.up
+
+    def traction_down(self):
+        self._raw["traction_direction"] = TractionDirection.down
+
+    @property
+    def count_anti_node(self) -> int:
+        return self._raw["count_anti_node"]
+
+    def count_anti_node_up(self):
+        n = self._raw["count_anti_node"]
+        assert n <= 1000
+        if n == 1000:
+            return
+        self._raw["count_anti_node"] = n + 1
+
+    def count_anti_node_down(self):
+        n = self._raw["count_anti_node"]
+        assert n >= 3
+        if n == 3:
+            return
+        self._raw["count_anti_node"] = n - 1
+
+    @staticmethod
+    def setup_dict(
+        d: dict, frequency: int = 63, direction: TractionDirection = TractionDirection.up, count_anti_node: int = 4
+    ) -> dict:
+        d["frequency"] = frequency
+        d["traction_direction"] = direction
+        d["count_anti_node"] = count_anti_node
+        return d
+
+
+def print_info(player_param: PlayerState, sig_param: SignalParam):
+    """CLI画面に表示される情報"""
+    print(
+        f"\rvolume {player_param.volume:.1f} "
+        f"f: {sig_param.frequency:>4} "
+        f"traction: {sig_param.traction_direction:>4} "
+        f"count_anti_node: {sig_param.count_anti_node:>3}",
+        end="",
+    )
+
+
+def execute_command(app_key: AppCommand, app_state: AppState, player_param: PlayerState, sig_param: SignalParam):
+    """AppCommandに対応するアプリ動作をする"""
+
+    if app_key == AppCommand.app_stop:
+        app_state.running = False
+
+    elif app_key == AppCommand.pause:
+        player_param.change_play_state()
+
+    elif app_key == AppCommand.volume_up:
+        player_param.volume_up()
+    elif app_key == AppCommand.volume_down:
+        player_param.volume_down()
+
+    elif app_key == AppCommand.traction_up:
+        sig_param.traction_up()
+    elif app_key == AppCommand.traction_down:
+        sig_param.traction_down()
+
+    elif app_key == AppCommand.frequency_up:
+        sig_param.frequency_up()
+    elif app_key == AppCommand.frequency_down:
+        sig_param.frequency_down()
+
+    elif app_key == AppCommand.anti_node_up:
+        sig_param.count_anti_node_up()
+    elif app_key == AppCommand.anti_node_down:
+        sig_param.count_anti_node_down()
+
+    print_info(player_param, sig_param)
+
+
 def main():
     loop = asyncio.get_event_loop()
 
-    # 共有変数を使うためのManager
+    # キーボードからのコマンド読み取りと音の再生を別プロセスで実行する。
+    # マルチプロセス: ProcessPoolExecutor
+    # プロセス間通信: multiprocessing#Manager
     with multiprocessing.Manager() as manager, ProcessPoolExecutor() as pool:
         app_state_dict = manager.dict()
-        player_state_dict = PlayerParameterHelper.setup_dict(manager.dict())
-        signal_param_dict = SignalParameterHelper.setup_dict(manager.dict())
+        player_state_dict = PlayerStateMultiProcessing.setup_dict(manager.dict())
+        signal_param_dict = SignalParamMultiProcessing.setup_dict(manager.dict())
 
-        AppStateHelper(app_state_dict).is_running = True
+        AppStateMultiProcessing(app_state_dict).is_running = True
 
         print_info(
-            sig_param=SignalParameterHelper(signal_param_dict),
-            player_param=PlayerParameterHelper(player_state_dict),
+            PlayerStateMultiProcessing(player_state_dict),
+            SignalParamMultiProcessing(signal_param_dict),
         )
 
         partial_execute_command = partial(
             execute_command,
-            app_state=AppStateHelper(app_state_dict),
-            sig_param=SignalParameterHelper(signal_param_dict),
-            player_param=PlayerParameterHelper(player_state_dict),
+            app_state=AppStateMultiProcessing(app_state_dict),
+            player_param=PlayerStateMultiProcessing(player_state_dict),
+            sig_param=SignalParamMultiProcessing(signal_param_dict),
         )
 
         f1 = loop.run_in_executor(
             pool,
             keyboard_listener,
             partial_execute_command,
-            AppStateHelper(app_state_dict),
+            AppStateMultiProcessing(app_state_dict),
         )
         f2 = loop.run_in_executor(
             pool,
             play,
-            AppStateHelper(app_state_dict),
-            SignalParameterHelper(signal_param_dict),
-            PlayerParameterHelper(player_state_dict),
+            AppStateMultiProcessing(app_state_dict),
+            PlayerStateMultiProcessing(player_state_dict),
+            SignalParamMultiProcessing(signal_param_dict),
         )
 
         f = asyncio.gather(f1, f2, loop=loop, return_exceptions=True)
