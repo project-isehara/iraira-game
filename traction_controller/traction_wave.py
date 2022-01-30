@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def asymmetric_signal(x, count_anti_node: int = 4) -> np.ndarray:
+def traction_wave(x, count_anti_node: int = 4) -> np.ndarray:
     """非対称周期信号を生成する
     周期2πでcount_anti_node個の腹を持つ関数。最後の腹のみ下に凸でそれ以外は上に凸となる。
 
@@ -24,16 +24,17 @@ def asymmetric_signal(x, count_anti_node: int = 4) -> np.ndarray:
     return multi_sin_abs
 
 
-def show_asymmetric_signal():
-    """asymmetric_signal の動作確認"""
+def show_traction_wave():
+    """traction_wave の動作確認"""
     fs = 10000
     duration_sec = 2.3
     t = np.linspace(0, duration_sec, int(fs * duration_sec), endpoint=False)
 
     sigs = [
-        asymmetric_signal(2 * np.pi * 1 * t),  # f=1,節4つ
-        asymmetric_signal(2 * np.pi * 1 * t, 3),  # f=1, 節3つ
-        asymmetric_signal(2 * np.pi * (4 / 3) * t, 3),  # f=4/3, 節3つ ==波長はf=1,節4つと同じ
+        traction_wave(2 * np.pi * 1 * t),  # f=1,節4つ
+        traction_wave(2 * np.pi * 1 * t, 3),  # f=1, 節3つ
+        traction_wave(2 * np.pi * (4 / 3) * t, 3),  # f=4/3, 節3つ ==波長はf=1,節4つと同じ
+        traction_wave(2 * np.pi * (4 / 3) * t, 3),  # f=4/3, 節3つ ==波長はf=1,節4つと同じ
     ]
 
     fig, axes = plt.subplots(len(sigs), 1)
@@ -44,4 +45,4 @@ def show_asymmetric_signal():
 
 
 if __name__ == "__main__":
-    show_asymmetric_signal()
+    show_traction_wave()

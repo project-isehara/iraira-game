@@ -12,7 +12,7 @@ import numpy as np
 from keyboard import AppCommand, keyboard_listener
 from state import AppStateHelper
 from traction_contraller import Player, TractionDirection
-from traction_wave import asymmetric_signal
+from traction_wave import traction_wave
 
 
 def play(h: AppStateHelper, sig_param: SignalParameterHelper, player_param: PlayerParameterHelper):
@@ -29,7 +29,7 @@ def play(h: AppStateHelper, sig_param: SignalParameterHelper, player_param: Play
         duration_sec = round(duration_sec * frequency) / frequency
 
         t = np.linspace(0, duration_sec, int(fs * duration_sec), endpoint=False)
-        sig = asymmetric_signal(2 * np.pi * frequency * t).astype(np.float32)
+        sig = traction_wave(2 * np.pi * frequency * t).astype(np.float32)
         if traction_direction == TractionDirection.down:
             sig = -sig
         return sig
