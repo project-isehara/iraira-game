@@ -172,6 +172,8 @@ class PlayerParameterHelper:
 
 
 def main():
+    loop = asyncio.get_event_loop()
+
     # 共有変数を使うためのManager
     with multiprocessing.Manager() as manager, ProcessPoolExecutor() as pool:
         d = manager.dict()
@@ -208,5 +210,4 @@ def main():
 
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
     main()
