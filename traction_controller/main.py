@@ -16,7 +16,6 @@ from traction_wave import asymmetric_signal
 
 
 def play(h: AppStateHelper, sig_param: SignalParameterHelper, player_param: PlayerParameterHelper):
-    duration_sec = 1
 
     player = Player(player_param)
     player.start()
@@ -25,6 +24,9 @@ def play(h: AppStateHelper, sig_param: SignalParameterHelper, player_param: Play
         fs = player_param.fs
         frequency = sig_param.frequency
         traction_direction = sig_param.traction_direction
+
+        duration_sec = 0.2
+        duration_sec = round(duration_sec * frequency) / frequency
 
         t = np.linspace(0, duration_sec, int(fs * duration_sec), endpoint=False)
         sig = asymmetric_signal(2 * np.pi * frequency * t).astype(np.float32)
