@@ -219,7 +219,7 @@ def main():
             SignalParamMultiProcessing(signal_param_dict),
         )
 
-        f = asyncio.gather(f1, f2, loop=loop, return_exceptions=True)
+        f = asyncio.gather(f1, f2, return_exceptions=True)
         loop.run_until_complete(f)
 
 
