@@ -143,7 +143,8 @@ def print_info(player_param: PlayerState, sig_param: SignalParam):
         f"\rvolume {player_param.volume:.1f} "
         f"f: {sig_param.frequency:>4} "
         f"traction: {sig_param.traction_direction:>4} "
-        f"count_anti_node: {sig_param.count_anti_node:>3}",
+        f"count_anti_node: {sig_param.count_anti_node:>3} "
+        f"play: {'playing' if player_param.is_running else 'stop':>7}",
         end="",
     )
 
