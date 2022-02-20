@@ -4,17 +4,18 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-readchar = "*"
-
 # Signal processing
 numpy = "==1.21.4"
 scipy = "==1.7.3"
 pandas = "==1.3.5"
 matplotlib = "==3.5.1"
 
-# Audio I/O
-# Python 3.9 unofficial binary https://www.lfd.uci.edu/~gohlke/pythonlibs/#pyaudio
-pyaudio = { path = "./libs/PyAudio-0.2.11-cp39-cp39-win_amd64.whl" }
+# jupyter environment
+jupyterlab = "==3.2.5"
+jupyterlab-lsp = "==3.9.2"
+# jupyterlab-kite = "==2.0.2"
+lckr-jupyterlab-variableinspector = "==3.0.9"
+jupyterlab_code_formatter = "1.4.10"
 
 # Format/Linter
 black = "==21.12b0"
