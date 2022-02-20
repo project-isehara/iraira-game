@@ -1,4 +1,4 @@
-#include <Arduino.h>
+#include <M5StickCPlus.h>
 
 void setup() {
   // put your setup code here, to run once:
