@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import matplotlib.pyplot as plt
 import numpy as np
 
 
@@ -26,6 +25,8 @@ def traction_wave(x, count_anti_node: int = 4) -> np.ndarray:
 
 def show_traction_wave():
     """traction_wave の動作確認"""
+    import matplotlib.pyplot as plt
+    
     fs = 10000
     duration_sec = 2.3
     t = np.linspace(0, duration_sec, int(fs * duration_sec), endpoint=False)
