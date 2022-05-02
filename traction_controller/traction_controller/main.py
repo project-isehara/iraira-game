@@ -182,7 +182,7 @@ def execute_command(app_key: AppCommand, app_state: AppState, player_param: Play
 
 
 def main():
-    loop = asyncio.get_event_loop()
+    loop = asyncio.new_event_loop()
 
     # キーボードからのコマンド読み取りと音の再生を別プロセスで実行する。
     # マルチプロセス: ProcessPoolExecutor
