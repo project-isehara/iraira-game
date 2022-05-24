@@ -5,16 +5,17 @@ description = ""
 authors = []
 
 [tool.poetry.dependencies]
-python = "~3.10"
+python = ">=3.9, <=3.10"
 readchar = "^3.0.5"
 numpy = "^1.22.3"
 
 pyaudio = [
     # apt install 
-    {version = "^0.2.11", platform = "linux" },
+    {version = "^0.2.11", markers = "platform_system == 'Linux'" },
 
     # Windows binary: Python 3.10 unofficial binary https://www.lfd.uci.edu/~gohlke/pythonlibs/#pyaudio
-    {path = "./libs/PyAudio-0.2.11-cp310-cp310-win_amd64.whl", markers = "platform_system == \"Windows\""},
+    {path = "./libs/PyAudio-0.2.11-cp39-cp39-win_amd64.whl", markers = "platform_system == 'Windows'", python = "~3.9"},
+    {path = "./libs/PyAudio-0.2.11-cp310-cp310-win_amd64.whl", markers = "platform_system == 'Windows'", python = "~3.10"},
 ]
 
 [tool.poetry.dev-dependencies]
@@ -28,7 +29,6 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.black]
 line-length = 120
-target-version = ['py310']
 
 [tool.isort]
 profile = "black"
