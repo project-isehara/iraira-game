@@ -1,0 +1,6 @@
+{
+    "python.formatting.provider": "black",
+    "python.linting.mypyEnabled": true,
+    "python.sortImports.path": "isort",
+    "python.envFile": "${workspaceFolder}/traction_controller/.env"
+}

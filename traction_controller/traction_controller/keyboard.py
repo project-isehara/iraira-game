@@ -2,7 +2,8 @@ from collections.abc import Callable
 from enum import Enum, auto
 
 import readchar
-from state import AppState
+
+from traction_controller.state import AppState
 
 
 class AppCommand(Enum):

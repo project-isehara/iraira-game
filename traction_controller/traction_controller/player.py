@@ -6,8 +6,9 @@ from typing import Protocol
 
 import numpy as np
 import pyaudio
-from state import AppState
-from traction_wave import traction_wave
+
+from traction_controller.state import AppState
+from traction_controller.traction_wave import traction_wave
 
 
 class PlayerState(Protocol):
@@ -44,6 +45,9 @@ class SignalParam(Protocol):
         ...
 
     def traction_down(self):
+        ...
+
+    def traction_change(self):
         ...
 
     def count_anti_node_up(self):
@@ -99,7 +103,10 @@ class Player:
 
 @lru_cache(maxsize=1)
 def create_traction_wave(
-    fs: int, frequency: int, traction_direction: TractionDirection, count_anti_node: int = 4
+    fs: int,
+    frequency: int,
+    traction_direction: TractionDirection,
+    count_anti_node: int = 4,
 ) -> np.ndarray:
 
     # 生成波形の長さが波形周波数の整数倍になるように調整

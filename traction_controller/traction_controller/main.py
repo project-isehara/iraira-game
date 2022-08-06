@@ -6,9 +6,10 @@ from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from functools import partial
 
-from keyboard import AppCommand, keyboard_listener
-from player import PlayerState, SignalParam, TractionDirection, play
-from state import AppState
+from traction_controller.keyboard import AppCommand, keyboard_listener
+from traction_controller.player import PlayerState, SignalParam, TractionDirection, play
+from traction_controller.state import AppState
+from traction_controller.switch import switch_listener
 
 
 @dataclass
@@ -103,6 +104,13 @@ class SignalParamMultiProcessing:
     def traction_direction(self) -> TractionDirection:
         return self._raw["traction_direction"]
 
+    def traction_change(self):
+        if self.traction_direction == TractionDirection.up:
+            self._raw["traction_direction"] = TractionDirection.down
+        else:
+            self._raw["traction_direction"] = TractionDirection.up
+        print(self.traction_direction)
+
     def traction_up(self):
         self._raw["traction_direction"] = TractionDirection.up
 
@@ -129,7 +137,10 @@ class SignalParamMultiProcessing:
 
     @staticmethod
     def setup_dict(
-        d: dict, frequency: int = 63, direction: TractionDirection = TractionDirection.up, count_anti_node: int = 4
+        d: dict,
+        frequency: int = 63,
+        direction: TractionDirection = TractionDirection.up,
+        count_anti_node: int = 4,
     ) -> dict:
         d["frequency"] = frequency
         d["traction_direction"] = direction
@@ -149,7 +160,12 @@ def print_info(player_param: PlayerState, sig_param: SignalParam):
     )
 
 
-def execute_command(app_key: AppCommand, app_state: AppState, player_param: PlayerState, sig_param: SignalParam):
+def execute_command(
+    app_key: AppCommand,
+    app_state: AppState,
+    player_param: PlayerState,
+    sig_param: SignalParam,
+):
     """AppCommandに対応するアプリ動作をする"""
 
     if app_key == AppCommand.app_stop:
@@ -220,9 +236,12 @@ def main():
             SignalParamMultiProcessing(signal_param_dict),
         )
 
-        f = asyncio.gather(f1, f2, return_exceptions=True)
+        f3 = loop.run_in_executor(
+            pool,
+            switch_listener,
+            AppStateMultiProcessing(app_state_dict),
+            SignalParamMultiProcessing(signal_param_dict),
+        )
+
+        f = asyncio.gather(f1, f2, f3, return_exceptions=True)
         loop.run_until_complete(f)
-
-
-if __name__ == "__main__":
-    main()
