@@ -6,6 +6,7 @@ from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from functools import partial
 
+from traction_controller.gui import show_gui
 from traction_controller.keyboard import AppCommand, keyboard_listener
 from traction_controller.player import PlayerState, SignalParam, TractionDirection, play
 from traction_controller.state import AppState
@@ -109,7 +110,6 @@ class SignalParamMultiProcessing:
             self._raw["traction_direction"] = TractionDirection.down
         else:
             self._raw["traction_direction"] = TractionDirection.up
-        print(self.traction_direction)
 
     def traction_up(self):
         self._raw["traction_direction"] = TractionDirection.up
@@ -169,7 +169,7 @@ def execute_command(
     """AppCommandに対応するアプリ動作をする"""
 
     if app_key == AppCommand.app_stop:
-        app_state.running = False
+        app_state.is_running = False
 
     elif app_key == AppCommand.pause:
         player_param.change_play_state()
@@ -243,5 +243,12 @@ def main():
             SignalParamMultiProcessing(signal_param_dict),
         )
 
-        f = asyncio.gather(f1, f2, f3, return_exceptions=True)
+        f4 = loop.run_in_executor(
+            pool,
+            show_gui,
+            AppStateMultiProcessing(app_state_dict),
+            SignalParamMultiProcessing(signal_param_dict),
+        )
+
+        f = asyncio.gather(f1, f2, f3, f4, return_exceptions=True)
         loop.run_until_complete(f)
