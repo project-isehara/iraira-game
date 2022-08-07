@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import tkinter as tk
 
-from traction_controller.player import SignalParam
-from traction_controller.state import AppState
+from iraira.player import SignalParam
+from iraira.state import AppState
 
 
 class Application(tk.Frame):

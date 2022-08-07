@@ -8,7 +8,7 @@
 ディレクトリ構成
 
 ```
-├─bilibili_emb          # M5制御用コード
-├─experiment            # 実験的コード
-└─traction_controller   # 牽引力錯覚振動（音声）生成プログラム
+├─bilibili_emb    # M5制御用コード
+├─experiment      # 実験的コード
+└─iraira          # イライラ棒制御プログラム
 ```

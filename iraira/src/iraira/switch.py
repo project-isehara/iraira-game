@@ -1,8 +1,8 @@
 # pyright: reportGeneralTypeIssues=false
 import RPi.GPIO as GPIO
 
-from traction_controller.player import SignalParam
-from traction_controller.state import AppState
+from iraira.player import SignalParam
+from iraira.state import AppState
 
 GPIO_PIN = 17
 

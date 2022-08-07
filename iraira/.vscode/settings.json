@@ -3,5 +3,5 @@
     "python.linting.mypyEnabled": true,
     "python.linting.flake8Enabled": true,
     "python.sortImports.path": "isort",
-    "python.envFile": "${workspaceFolder}/traction_controller/.env",
+    "python.envFile": "${workspaceFolder}/.env",
 }

@@ -7,8 +7,8 @@ from typing import Protocol
 import numpy as np
 import pyaudio
 
-from traction_controller.state import AppState
-from traction_controller.traction_wave import traction_wave
+from iraira.state import AppState
+from iraira.traction_wave import traction_wave
 
 
 class PlayerState(Protocol):

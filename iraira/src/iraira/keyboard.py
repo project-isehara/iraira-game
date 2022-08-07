@@ -3,7 +3,7 @@ from enum import Enum, auto
 
 import readchar
 
-from traction_controller.state import AppState
+from iraira.state import AppState
 
 
 class AppCommand(Enum):

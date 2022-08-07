@@ -6,11 +6,11 @@ from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from functools import partial
 
-from traction_controller.gui import show_gui
-from traction_controller.keyboard import AppCommand, keyboard_listener
-from traction_controller.player import PlayerState, SignalParam, TractionDirection, play
-from traction_controller.state import AppState
-from traction_controller.switch import switch_listener
+from iraira.gui import show_gui
+from iraira.keyboard import AppCommand, keyboard_listener
+from iraira.player import PlayerState, SignalParam, TractionDirection, play
+from iraira.state import AppState
+from iraira.switch import switch_listener
 
 
 @dataclass
