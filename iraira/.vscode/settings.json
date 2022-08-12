@@ -2,6 +2,12 @@
     "python.formatting.provider": "black",
     "python.linting.mypyEnabled": true,
     "python.linting.flake8Enabled": true,
-    "python.sortImports.path": "isort",
     "python.envFile": "${workspaceFolder}/.env",
+    "runOnSave.commands": [
+        {
+            "match": ".*\\.py$",
+            "command": "poetry run isort ${file}",
+            "runIn": "backend",
+        }
+    ],
 }
