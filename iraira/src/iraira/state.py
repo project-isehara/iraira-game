@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum, auto
-from multiprocessing.managers import DictProxy
+from multiprocessing.managers import DictProxy  # type: ignore
 from typing import Protocol
 
 
