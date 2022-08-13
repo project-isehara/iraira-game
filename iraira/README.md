@@ -35,3 +35,10 @@ python -m poetry python src/iraira
 ```shell
 python -m poetry install --no-dev
 ```
+
+#### WSL環境 (Ubuntu22.04)
+
+Qt動作
+
+* [libegl1](https://packages.ubuntu.com/bionic/libegl1)のインストール`sudo apt libegl1`が必要
+* 日本語フォントがないため追加インストール `sudo apt install fonts-noto-cjk`

@@ -9,7 +9,6 @@ from iraira.gui import show_gui
 from iraira.keyboard import AppCommand, keyboard_listener
 from iraira.player import PlayerState, SignalParam, play
 from iraira.state import AppState, SharedAppState, SharedPLayerState, SharedSignalParam
-from iraira.switch import switch_listener
 
 
 def print_info(player_param: PlayerState, sig_param: SignalParam):
@@ -92,6 +91,7 @@ def main():
             partial_execute_command,
             SharedAppState(app_state_dict),
         )
+
         f2 = loop.run_in_executor(
             pool,
             play,
@@ -102,17 +102,24 @@ def main():
 
         f3 = loop.run_in_executor(
             pool,
-            switch_listener,
-            SharedAppState(app_state_dict),
-            SharedSignalParam(signal_param_dict),
-        )
-
-        f4 = loop.run_in_executor(
-            pool,
             show_gui,
             SharedAppState(app_state_dict),
             SharedSignalParam(signal_param_dict),
         )
+        futures = [f1, f2, f3]
 
-        f = asyncio.gather(f1, f2, f3, f4, return_exceptions=True)
+        try:
+            from iraira.switch import switch_listener
+
+            f = loop.run_in_executor(
+                pool,
+                switch_listener,
+                SharedAppState(app_state_dict),
+                SharedSignalParam(signal_param_dict),
+            )
+            futures.append(f)
+        except RuntimeError as e:
+            print(e)
+
+        f = asyncio.gather(futures, return_exceptions=True)
         loop.run_until_complete(f)
