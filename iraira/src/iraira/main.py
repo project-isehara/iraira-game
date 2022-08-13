@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import asyncio
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor

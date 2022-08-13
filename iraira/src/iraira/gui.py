@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import tkinter as tk
 
 from iraira.player import SignalParam
