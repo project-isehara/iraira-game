@@ -2,22 +2,33 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum, auto
+from multiprocessing.managers import DictProxy
 from typing import Protocol
 
 
 class AppState(Protocol):
     """アプリ動作中の状態"""
 
-    is_running: bool
+    @property
+    def is_running(self) -> bool:
+        """アプリの動作状態"""
+        ...
+
+    @is_running.setter
+    def is_running(self, value: bool):
+        """アプリの動作状態をセットする"""
+        ...
 
 
-@dataclass
-class AppStateMultiProcessing:
-    """MultiProcessingで使用できる AppState の実装クラス
+@dataclass()
+class SharedAppState:
+    """AppStateの実装
+
+    MultiProcessingのDictProxyのラッパークラスでありマルチプロセスで状態共有できる
     状態を扱うプロセスごとにインスタンスを生成しなければいけない
     """
 
-    _raw: dict
+    _raw: DictProxy
 
     @property
     def is_running(self) -> bool:
@@ -28,13 +39,40 @@ class AppStateMultiProcessing:
         self._raw["is_running"] = value
 
 
+class PlayerState(Protocol):
+    """振動再生のパラメータ"""
+
+    @property
+    def fs(self) -> int:
+        ...
+
+    @property
+    def volume(self) -> float:
+        ...
+
+    @property
+    def is_running(self) -> bool:
+        ...
+
+    def volume_up(self):
+        ...
+
+    def volume_down(self):
+        ...
+
+    def change_play_state(self):
+        ...
+
+
 @dataclass
-class PlayerStateMultiProcessing:
-    """MultiProcessingで使用できる PlayerState の実装クラス
+class SharedPLayerState:
+    """PlayerStateの実装クラス
+
+    MultiProcessingのDictProxyのラッパークラスでありマルチプロセスで状態共有できる
     状態を扱うプロセスごとにインスタンスを生成しなければいけない
     """
 
-    _raw: dict
+    _raw: DictProxy
 
     @property
     def fs(self) -> int:
@@ -66,7 +104,7 @@ class PlayerStateMultiProcessing:
         self._raw["is_running"] = not self._raw["is_running"]
 
     @staticmethod
-    def setup_dict(d: dict, fs: int = 44_100, volume: float = 0.5, is_running: bool = True) -> dict:
+    def setup_dict(d: DictProxy, fs: int = 44_100, volume: float = 0.5, is_running: bool = True) -> DictProxy:
         d["fs"] = fs
         d["volume"] = volume
         d["is_running"] = is_running
@@ -83,13 +121,50 @@ class TractionDirection(Enum):
         return self.name
 
 
+class SignalParam(Protocol):
+    """非対称周期信号のパラメータ"""
+
+    @property
+    def frequency(self) -> int:
+        ...
+
+    @property
+    def traction_direction(self) -> TractionDirection:
+        ...
+
+    @property
+    def count_anti_node(self) -> int:
+        ...
+
+    def frequency_up(self):
+        ...
+
+    def frequency_down(self):
+        ...
+
+    def traction_up(self):
+        ...
+
+    def traction_down(self):
+        ...
+
+    def traction_change(self):
+        ...
+
+    def count_anti_node_up(self):
+        ...
+
+    def count_anti_node_down(self):
+        ...
+
+
 @dataclass
-class SignalParamMultiProcessing:
+class SharedSignalParam:
     """MultiProcessingで使用できる SignalParam の実装クラス
     状態を扱うプロセスごとにインスタンスを生成しなければいけない
     """
 
-    _raw: dict
+    _raw: DictProxy
 
     @property
     def frequency(self) -> int:
@@ -145,58 +220,12 @@ class SignalParamMultiProcessing:
 
     @staticmethod
     def setup_dict(
-        d: dict,
+        d: DictProxy,
         frequency: int = 63,
         direction: TractionDirection = TractionDirection.up,
         count_anti_node: int = 4,
-    ) -> dict:
+    ) -> DictProxy:
         d["frequency"] = frequency
         d["traction_direction"] = direction
         d["count_anti_node"] = count_anti_node
         return d
-
-
-class PlayerState(Protocol):
-    """音声プレーヤーの状態"""
-
-    fs: int
-    volume: bool
-    is_running: bool
-
-    def volume_up(self):
-        ...
-
-    def volume_down(self):
-        ...
-
-    def change_play_state(self):
-        ...
-
-
-class SignalParam(Protocol):
-    """非対称周期信号のパラメータ"""
-
-    frequency: int
-    traction_direction: TractionDirection
-    count_anti_node: int
-
-    def frequency_up(self):
-        ...
-
-    def frequency_down(self):
-        ...
-
-    def traction_up(self):
-        ...
-
-    def traction_down(self):
-        ...
-
-    def traction_change(self):
-        ...
-
-    def count_anti_node_up(self):
-        ...
-
-    def count_anti_node_down(self):
-        ...
