@@ -168,42 +168,6 @@ optional = false
 python-versions = ">=3.6"
 
 [[package]]
-name = "pyside6"
-version = "6.3.1"
-description = "Python bindings for the Qt cross-platform application and UI framework"
-category = "main"
-optional = false
-python-versions = "<3.11,>=3.6"
-
-[package.dependencies]
-PySide6-Addons = "6.3.1"
-PySide6-Essentials = "6.3.1"
-shiboken6 = "6.3.1"
-
-[[package]]
-name = "pyside6-addons"
-version = "6.3.1"
-description = "Python bindings for the Qt cross-platform application and UI framework (Addons)"
-category = "main"
-optional = false
-python-versions = "<3.11,>=3.6"
-
-[package.dependencies]
-PySide6-Essentials = "6.3.1"
-shiboken6 = "6.3.1"
-
-[[package]]
-name = "pyside6-essentials"
-version = "6.3.1"
-description = "Python bindings for the Qt cross-platform application and UI framework (Essentials)"
-category = "main"
-optional = false
-python-versions = "<3.11,>=3.6"
-
-[package.dependencies]
-shiboken6 = "6.3.1"
-
-[[package]]
 name = "readchar"
 version = "3.1.0"
 description = "Utilities to read single characters and key-strokes"
@@ -218,14 +182,6 @@ description = "A module to control Raspberry Pi GPIO channels"
 category = "main"
 optional = false
 python-versions = "*"
-
-[[package]]
-name = "shiboken6"
-version = "6.3.1"
-description = "Python/C++ bindings helper module"
-category = "main"
-optional = false
-python-versions = "<3.11,>=3.6"
 
 [[package]]
 name = "tomli"
@@ -246,7 +202,7 @@ python-versions = ">=3.7"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9, <=3.10"
-content-hash = "823a35aec6d2072a533e43cacdb0e6c2abf7e1ba794ca516c8718a99b7320c2c"
+content-hash = "ea41ff23485b1a40789157517dd78f1838512e4511df14251826e9d9d71c6f6f"
 
 [metadata.files]
 black = [
@@ -377,21 +333,6 @@ pyflakes = [
     {file = "pyflakes-2.5.0-py2.py3-none-any.whl", hash = "sha256:4579f67d887f804e67edb544428f264b7b24f435b263c4614f384135cea553d2"},
     {file = "pyflakes-2.5.0.tar.gz", hash = "sha256:491feb020dca48ccc562a8c0cbe8df07ee13078df59813b83959cbdada312ea3"},
 ]
-pyside6 = [
-    {file = "PySide6-6.3.1-cp36-abi3-macosx_10_9_universal2.whl", hash = "sha256:58b824cb41d549a149a17786326f79a2fa46a1ce94e06397e78ea5707757b052"},
-    {file = "PySide6-6.3.1-cp36-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:bc749968d641af1c516b6b0e00264bffea9cfc2d56dc04766f36e1a313e93a3a"},
-    {file = "PySide6-6.3.1-cp36-abi3-win_amd64.whl", hash = "sha256:947185379c181d5e51b7b6bf2df8d8127c675ea57604d41265c67444d226db26"},
-]
-pyside6-addons = [
-    {file = "PySide6_Addons-6.3.1-cp36-abi3-macosx_10_9_universal2.whl", hash = "sha256:7a6bb180e41a4c599aa0e93d11e60570d0ebc79c197afccd9c227566dad5d5ef"},
-    {file = "PySide6_Addons-6.3.1-cp36-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:14f4171b15dbdd7d120dc125c84f2eca53bc197182295bfdfdb3bb95b58a46c7"},
-    {file = "PySide6_Addons-6.3.1-cp36-abi3-win_amd64.whl", hash = "sha256:9a933fac75c85bea3a9e31b24926e06b1afebae23cd164f10f2001999ea2692c"},
-]
-pyside6-essentials = [
-    {file = "PySide6_Essentials-6.3.1-cp36-abi3-macosx_10_9_universal2.whl", hash = "sha256:55696693325a2de7bf5b56274b534f191032d218d61a948baa95933f6e642e59"},
-    {file = "PySide6_Essentials-6.3.1-cp36-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:e27962beb2cc45fe13a1a1c24a454c3c3c3c3082c4a84bc5dcf6b306979ba013"},
-    {file = "PySide6_Essentials-6.3.1-cp36-abi3-win_amd64.whl", hash = "sha256:fa825c5396a5dfedf59635e904239187e2f2225c7f65917d4e973062c9a6b916"},
-]
 readchar = [
     {file = "readchar-3.1.0-py3-none-any.whl", hash = "sha256:16059b8beb1f525182de193fade8ca314cc4c32f62956a9a50268909103cdaa8"},
     {file = "readchar-3.1.0.tar.gz", hash = "sha256:9023c957164e9c5a5cf7c39122a013ed78162d9360b4cb9cfdd492a3238f7634"},
@@ -405,11 +346,6 @@ readchar = [
     {file = "RPi.GPIO-0.7.1-py2.7-linux-armv6l.egg", hash = "sha256:26b2ade4bb353bbe5417a64e40b45cdf00a82f27c2d320c0dd46c59751959d77"},
     {file = "RPi.GPIO-0.7.1-py3.7-linux-armv6l.egg", hash = "sha256:96ea7e5bf6bf592828487bfa7d3d1d0e432d5d1682e9e33b4dab398914628fcd"},
     {file = "RPi.GPIO-0.7.1.tar.gz", hash = "sha256:cd61c4b03c37b62bba4a5acfea9862749c33c618e0295e7e90aa4713fb373b70"},
-]
-shiboken6 = [
-    {file = "shiboken6-6.3.1-cp36-abi3-macosx_10_9_universal2.whl", hash = "sha256:6393aa330101b098631a88dfb99b6b46794046c7f63b5c1ac93ae2fcef4773ff"},
-    {file = "shiboken6-6.3.1-cp36-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:aad9aa8e7ecd3c889cc789e41abf3990101126b5b02edfcf87f1ef331c9dc45a"},
-    {file = "shiboken6-6.3.1-cp36-abi3-win_amd64.whl", hash = "sha256:cb9cf4ad858e59237642bf6b8be1fe6f19cb090799ff00e4c2643768d73e8ebe"},
 ]
 tomli = [
     {file = "tomli-2.0.1-py3-none-any.whl", hash = "sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc"},
