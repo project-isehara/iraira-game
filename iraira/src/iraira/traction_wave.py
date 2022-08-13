@@ -1,19 +1,20 @@
 from __future__ import annotations
 
 import numpy as np
+import numpy.typing as npt
 
 
-def traction_wave(x, count_anti_node: int = 4) -> np.ndarray:
+def traction_wave(x: npt.NDArray[np.floating], count_anti_node: int = 4) -> npt.NDArray[np.float_]:
     """牽引力波形を生成する
     周期2πでcount_anti_node個の腹を持つ関数。最後の腹のみ下に凸でそれ以外は上に凸となる。
 
-    :param x: 角度[rad], array_likeオブジェクトを受け取れる
+    :param x: 角度[rad]
     :param count_anti_node: 1周期の腹の数, 3以上を指定する
     """
     if not count_anti_node >= 3:
         raise ValueError("count_anti_node expected 3 or more")
 
-    multi_sin_abs = np.abs(np.sin(count_anti_node / 2 * x))
+    multi_sin_abs = np.abs(np.sin((count_anti_node / 2) * x))
 
     # 1周期内の最後の腹部分のみ下に凸とする
     x_mod_2pi = x % (2 * np.pi)  # [0 2π]範囲に正規化した角度 [π, 3π, 2π+0.4]→[π, π, 0.4]
@@ -23,7 +24,7 @@ def traction_wave(x, count_anti_node: int = 4) -> np.ndarray:
     return multi_sin_abs
 
 
-def show_traction_wave():
+def show_traction_wave() -> None:
     """traction_wave の動作確認"""
     import matplotlib.pyplot as plt
 

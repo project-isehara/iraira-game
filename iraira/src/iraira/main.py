@@ -4,14 +4,15 @@ import asyncio
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial
+from typing import Any
 
 from iraira.gui import show_gui
 from iraira.keyboard import AppCommand, keyboard_listener
 from iraira.player import PlayerState, SignalParam, play
-from iraira.state import AppState, SharedAppState, SharedPLayerState, SharedSignalParam
+from iraira.state import AppState, SharedAppState, SharedPlayerState, SharedSignalParam
 
 
-def print_info(player_param: PlayerState, sig_param: SignalParam):
+def print_info(player_param: PlayerState, sig_param: SignalParam) -> None:
     """CLI画面に表示される情報"""
     print(
         f"\rvolume {player_param.volume:.1f} "
@@ -28,7 +29,7 @@ def execute_command(
     app_state: AppState,
     player_param: PlayerState,
     sig_param: SignalParam,
-):
+) -> None:
     """AppCommandに対応するアプリ動作をする"""
 
     if app_key == AppCommand.app_stop:
@@ -60,28 +61,28 @@ def execute_command(
     print_info(player_param, sig_param)
 
 
-def main():
+def main() -> None:
     loop = asyncio.new_event_loop()
 
     # キーボードからのコマンド読み取りと音の再生を別プロセスで実行する。
     # マルチプロセス: ProcessPoolExecutor
     # プロセス間通信: multiprocessing#Manager
     with multiprocessing.Manager() as manager, ProcessPoolExecutor() as pool:
-        app_state_dict = manager.dict()
-        player_state_dict = SharedPLayerState.setup_dict(manager.dict())
+        app_state_dict: dict[str, Any] = manager.dict()
+        player_state_dict = SharedPlayerState.setup_dict(manager.dict())
         signal_param_dict = SharedSignalParam.setup_dict(manager.dict())
 
         SharedAppState(app_state_dict).is_running = True
 
         print_info(
-            SharedPLayerState(player_state_dict),
+            SharedPlayerState(player_state_dict),
             SharedSignalParam(signal_param_dict),
         )
 
         partial_execute_command = partial(
             execute_command,
             app_state=SharedAppState(app_state_dict),
-            player_param=SharedPLayerState(player_state_dict),
+            player_param=SharedPlayerState(player_state_dict),
             sig_param=SharedSignalParam(signal_param_dict),
         )
 
@@ -96,7 +97,7 @@ def main():
             pool,
             play,
             SharedAppState(app_state_dict),
-            SharedPLayerState(player_state_dict),
+            SharedPlayerState(player_state_dict),
             SharedSignalParam(signal_param_dict),
         )
 
@@ -104,6 +105,7 @@ def main():
             pool,
             show_gui,
             SharedAppState(app_state_dict),
+            SharedPlayerState(player_state_dict),
             SharedSignalParam(signal_param_dict),
         )
         futures = [f1, f2, f3]
@@ -121,5 +123,5 @@ def main():
         except RuntimeError as e:
             print(e)
 
-        f = asyncio.gather(futures, return_exceptions=True)
+        f = asyncio.gather(*futures, return_exceptions=True)
         loop.run_until_complete(f)

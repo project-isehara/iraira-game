@@ -3,6 +3,7 @@ from __future__ import annotations
 from functools import lru_cache
 
 import numpy as np
+import numpy.typing as npt
 import pyaudio
 
 from iraira.state import AppState, PlayerState, SignalParam, TractionDirection
@@ -17,26 +18,26 @@ class Player:
         self._stream = self._py_audio.open(format=pyaudio.paFloat32, channels=1, rate=param.fs, output=True)
         self.param = param
 
-    def start(self):
+    def start(self) -> None:
         self._stream.start_stream()
 
-    def stop(self):
+    def stop(self) -> None:
         self._stream.stop_stream()
 
-    def change_play_state(self):
+    def change_play_state(self) -> None:
         if self._stream.is_active():
             self.stop()
         else:
             self.start()
 
-    def close(self):
+    def close(self) -> None:
         self._stream.close()
         self._py_audio.terminate()
 
-    def write(self, sig: np.ndarray):
+    def write(self, sig: npt.NDArray[np.float32]) -> None:
         self._stream.write((sig * self.param.volume).tobytes())
 
-    def __enter__(self):
+    def __enter__(self) -> Player:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -49,7 +50,7 @@ def create_traction_wave(
     frequency: int,
     traction_direction: TractionDirection,
     count_anti_node: int = 4,
-) -> np.ndarray:
+) -> npt.NDArray[np.float32]:
 
     # 生成波形の長さが波形周波数の整数倍になるように調整
     duration_sec = 0.1
@@ -66,7 +67,7 @@ def create_traction_wave(
     return sig
 
 
-def play(app_state: AppState, player_param: PlayerState, sig_param: SignalParam):
+def play(app_state: AppState, player_param: PlayerState, sig_param: SignalParam) -> None:
     with Player(player_param) as player:
         player.start()
 

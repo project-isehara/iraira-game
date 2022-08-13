@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum, auto
 from multiprocessing.managers import DictProxy  # type: ignore
-from typing import Protocol
+from typing import Any, Protocol
 
 
 class AppState(Protocol):
@@ -15,7 +15,7 @@ class AppState(Protocol):
         ...
 
     @is_running.setter
-    def is_running(self, value: bool):
+    def is_running(self, value: bool) -> None:
         """アプリの動作状態をセットする"""
         ...
 
@@ -28,14 +28,14 @@ class SharedAppState:
     状態を扱うプロセスごとにインスタンスを生成しなければいけない
     """
 
-    _raw: DictProxy
+    _raw: DictProxy[str, Any]
 
     @property
     def is_running(self) -> bool:
         return self._raw["is_running"]
 
     @is_running.setter
-    def is_running(self, value: bool):
+    def is_running(self, value: bool) -> None:
         self._raw["is_running"] = value
 
 
@@ -54,25 +54,25 @@ class PlayerState(Protocol):
     def is_running(self) -> bool:
         ...
 
-    def volume_up(self):
+    def volume_up(self) -> None:
         ...
 
-    def volume_down(self):
+    def volume_down(self) -> None:
         ...
 
-    def change_play_state(self):
+    def change_play_state(self) -> None:
         ...
 
 
 @dataclass
-class SharedPLayerState:
+class SharedPlayerState:
     """PlayerStateの実装クラス
 
     MultiProcessingのDictProxyのラッパークラスでありマルチプロセスで状態共有できる
     状態を扱うプロセスごとにインスタンスを生成しなければいけない
     """
 
-    _raw: DictProxy
+    _raw: DictProxy[str, Any]
 
     @property
     def fs(self) -> int:
@@ -86,21 +86,21 @@ class SharedPLayerState:
     def volume(self) -> float:
         return self._raw["volume"]
 
-    def volume_up(self):
+    def volume_up(self) -> None:
         v = self.volume
         v += 0.1
         if v > 1:
             v = 1
         self._raw["volume"] = v
 
-    def volume_down(self):
+    def volume_down(self) -> None:
         v = self.volume
         v -= 0.1
         if v < 0:
             v = 0
         self._raw["volume"] = v
 
-    def change_play_state(self):
+    def change_play_state(self) -> None:
         self._raw["is_running"] = not self._raw["is_running"]
 
     @staticmethod
@@ -117,7 +117,7 @@ class TractionDirection(Enum):
     up = auto()
     down = auto()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
@@ -136,25 +136,25 @@ class SignalParam(Protocol):
     def count_anti_node(self) -> int:
         ...
 
-    def frequency_up(self):
+    def frequency_up(self) -> None:
         ...
 
-    def frequency_down(self):
+    def frequency_down(self) -> None:
         ...
 
-    def traction_up(self):
+    def traction_up(self) -> None:
         ...
 
-    def traction_down(self):
+    def traction_down(self) -> None:
         ...
 
-    def traction_change(self):
+    def traction_change(self) -> None:
         ...
 
-    def count_anti_node_up(self):
+    def count_anti_node_up(self) -> None:
         ...
 
-    def count_anti_node_down(self):
+    def count_anti_node_down(self) -> None:
         ...
 
 
@@ -164,20 +164,20 @@ class SharedSignalParam:
     状態を扱うプロセスごとにインスタンスを生成しなければいけない
     """
 
-    _raw: DictProxy
+    _raw: DictProxy[str, Any]
 
     @property
     def frequency(self) -> int:
         return self._raw["frequency"]
 
-    def frequency_up(self):
+    def frequency_up(self) -> None:
         f = self._raw["frequency"]
         assert f <= 1000
         if f == 1000:
             return
         self._raw["frequency"] = f + 1
 
-    def frequency_down(self):
+    def frequency_down(self) -> None:
         f = self._raw["frequency"]
         assert f >= 20
         if f == 20:
@@ -188,30 +188,30 @@ class SharedSignalParam:
     def traction_direction(self) -> TractionDirection:
         return self._raw["traction_direction"]
 
-    def traction_change(self):
+    def traction_change(self) -> None:
         if self.traction_direction == TractionDirection.up:
             self._raw["traction_direction"] = TractionDirection.down
         else:
             self._raw["traction_direction"] = TractionDirection.up
 
-    def traction_up(self):
+    def traction_up(self) -> None:
         self._raw["traction_direction"] = TractionDirection.up
 
-    def traction_down(self):
+    def traction_down(self) -> None:
         self._raw["traction_direction"] = TractionDirection.down
 
     @property
     def count_anti_node(self) -> int:
         return self._raw["count_anti_node"]
 
-    def count_anti_node_up(self):
+    def count_anti_node_up(self) -> None:
         n = self._raw["count_anti_node"]
         assert n <= 1000
         if n == 1000:
             return
         self._raw["count_anti_node"] = n + 1
 
-    def count_anti_node_down(self):
+    def count_anti_node_down(self) -> None:
         n = self._raw["count_anti_node"]
         assert n >= 3
         if n == 3:
