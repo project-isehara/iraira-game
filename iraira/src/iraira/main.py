@@ -6,7 +6,6 @@ from concurrent.futures import ProcessPoolExecutor
 from functools import partial
 from typing import Any
 
-from iraira.gui import show_gui
 from iraira.keyboard import AppCommand, keyboard_listener
 from iraira.player import PlayerState, SignalParam, play
 from iraira.state import AppState, SharedAppState, SharedPlayerState, SharedSignalParam
@@ -100,16 +99,24 @@ def main() -> None:
             SharedPlayerState(player_state_dict),
             SharedSignalParam(signal_param_dict),
         )
+        futures = [f1, f2]
 
-        f3 = loop.run_in_executor(
-            pool,
-            show_gui,
-            SharedAppState(app_state_dict),
-            SharedPlayerState(player_state_dict),
-            SharedSignalParam(signal_param_dict),
-        )
-        futures = [f1, f2, f3]
+        # GUIがある環境でのみ動作する
+        try:
+            from iraira.gui import show_gui
 
+            f = loop.run_in_executor(
+                pool,
+                show_gui,
+                SharedAppState(app_state_dict),
+                SharedPlayerState(player_state_dict),
+                SharedSignalParam(signal_param_dict),
+            )
+            futures.append(f)
+        except RuntimeError as e:
+            print(e)
+
+        # RaspberryPi環境でのみ動作する
         try:
             from iraira.switch import switch_listener
 
