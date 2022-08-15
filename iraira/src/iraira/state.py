@@ -20,7 +20,7 @@ class AppState(Protocol):
         ...
 
 
-@dataclass()
+@dataclass
 class SharedAppState:
     """AppStateの実装
 

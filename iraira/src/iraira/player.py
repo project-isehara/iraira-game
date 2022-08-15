@@ -40,7 +40,7 @@ class Player:
     def __enter__(self) -> Player:
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb):  # type: ignore
         self.close()
 
 
@@ -51,6 +51,14 @@ def create_traction_wave(
     traction_direction: TractionDirection,
     count_anti_node: int = 4,
 ) -> npt.NDArray[np.float32]:
+    """牽引力信号を生成する
+
+    :param fs: サンプリング周波数[Hz]
+    :param frequency: 信号周波数[Hz]
+    :param traction_direction: 牽引力方向
+    :param count_anti_node: 1周期の腹の数, 3以上を指定する, defaults to 4
+    :return: 牽引力信号
+    """
 
     # 生成波形の長さが波形周波数の整数倍になるように調整
     duration_sec = 0.1
@@ -68,6 +76,12 @@ def create_traction_wave(
 
 
 def play(app_state: AppState, player_param: PlayerState, sig_param: SignalParam) -> None:
+    """音声出力
+
+    :param app_state: アプリ状態
+    :param player_param: プレイヤー状態
+    :param sig_param: 信号状態
+    """
     with Player(player_param) as player:
         player.start()
 
