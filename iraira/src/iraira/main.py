@@ -4,7 +4,6 @@ import asyncio
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial
-from typing import Any
 
 from iraira.keyboard import AppCommand, keyboard_listener
 from iraira.player import PlayerState, SignalParam, play
@@ -67,37 +66,32 @@ def main() -> None:
     # マルチプロセス: ProcessPoolExecutor
     # プロセス間通信: multiprocessing#Manager
     with multiprocessing.Manager() as manager, ProcessPoolExecutor() as pool:
-        app_state_dict: dict[str, Any] = manager.dict()
-        player_state_dict = SharedPlayerState.setup_dict(manager.dict())
-        signal_param_dict = SharedSignalParam.setup_dict(manager.dict())
+        app_state = SharedAppState.get_with_init(manager.dict())
+        player_state = SharedPlayerState.get_with_init(manager.dict())
+        signal_param = SharedSignalParam.get_with_init(manager.dict())
 
-        SharedAppState(app_state_dict).is_running = True
-
-        print_info(
-            SharedPlayerState(player_state_dict),
-            SharedSignalParam(signal_param_dict),
-        )
+        print_info(player_state, signal_param)
 
         partial_execute_command = partial(
             execute_command,
-            app_state=SharedAppState(app_state_dict),
-            player_param=SharedPlayerState(player_state_dict),
-            sig_param=SharedSignalParam(signal_param_dict),
+            app_state=app_state,
+            player_param=player_state,
+            sig_param=signal_param,
         )
 
         f1 = loop.run_in_executor(
             pool,
             keyboard_listener,
             partial_execute_command,
-            SharedAppState(app_state_dict),
+            app_state,
         )
 
         f2 = loop.run_in_executor(
             pool,
             play,
-            SharedAppState(app_state_dict),
-            SharedPlayerState(player_state_dict),
-            SharedSignalParam(signal_param_dict),
+            app_state,
+            player_state,
+            signal_param,
         )
         futures = [f1, f2]
 
@@ -108,27 +102,22 @@ def main() -> None:
             f = loop.run_in_executor(
                 pool,
                 show_gui,
-                SharedAppState(app_state_dict),
-                SharedPlayerState(player_state_dict),
-                SharedSignalParam(signal_param_dict),
+                app_state,
+                player_state,
+                signal_param,
             )
             futures.append(f)
         except RuntimeError as e:
-            print(e)
+            print(f"tkinter: {e}")
 
         # RaspberryPi環境でのみ動作する
         try:
             from iraira.switch import switch_listener
 
-            f = loop.run_in_executor(
-                pool,
-                switch_listener,
-                SharedAppState(app_state_dict),
-                SharedSignalParam(signal_param_dict),
-            )
+            f = loop.run_in_executor(pool, switch_listener, app_state, signal_param)
             futures.append(f)
         except RuntimeError as e:
-            print(e)
+            print(f"RPi.GPIO: {e}")
 
         f = asyncio.gather(*futures, return_exceptions=True)
         loop.run_until_complete(f)

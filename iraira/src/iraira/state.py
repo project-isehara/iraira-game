@@ -38,6 +38,15 @@ class SharedAppState:
     def is_running(self, value: bool) -> None:
         self._raw["is_running"] = value
 
+    @staticmethod
+    def get(d: DictProxy) -> SharedAppState:
+        return SharedAppState(d)
+
+    @staticmethod
+    def get_with_init(d: DictProxy) -> SharedAppState:
+        d["is_running"] = True
+        return SharedAppState(d)
+
 
 class PlayerState(Protocol):
     """振動再生のパラメータ"""
@@ -104,11 +113,20 @@ class SharedPlayerState:
         self._raw["is_running"] = not self._raw["is_running"]
 
     @staticmethod
-    def setup_dict(d: DictProxy, fs: int = 44_100, volume: float = 0.5, is_running: bool = True) -> DictProxy:
+    def get(d: DictProxy) -> SharedPlayerState:
+        return SharedPlayerState(d)
+
+    @staticmethod
+    def get_with_init(
+        d: DictProxy,
+        fs: int = 44_100,
+        volume: float = 0.5,
+        is_running: bool = True,
+    ) -> SharedPlayerState:
         d["fs"] = fs
         d["volume"] = volume
         d["is_running"] = is_running
-        return d
+        return SharedPlayerState(d)
 
 
 class TractionDirection(Enum):
@@ -219,13 +237,17 @@ class SharedSignalParam:
         self._raw["count_anti_node"] = n - 1
 
     @staticmethod
-    def setup_dict(
+    def get(d: DictProxy) -> SharedSignalParam:
+        return SharedSignalParam(d)
+
+    @staticmethod
+    def get_with_init(
         d: DictProxy,
         frequency: int = 63,
         direction: TractionDirection = TractionDirection.up,
         count_anti_node: int = 4,
-    ) -> DictProxy:
+    ) -> SharedSignalParam:
         d["frequency"] = frequency
         d["traction_direction"] = direction
         d["count_anti_node"] = count_anti_node
-        return d
+        return SharedSignalParam(d)
