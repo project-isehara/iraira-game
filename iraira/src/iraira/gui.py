@@ -7,6 +7,20 @@ from iraira.state import AppState, PlayerState
 
 
 class Application(tk.Frame):
+    """GUI表示
+
+    画面遷移
+    [ゲームスタート] → []
+
+    常時入力対応キーボードコマンド
+    * q: アプリを終了する
+
+    ゲーム中コマンドキーボードコマンド
+    * [space]: 牽引力振動の再生/停止
+    * 左矢印[←]: 牽引力振動の方向を左にする
+    * 右矢印[→]: 牽引力振動の方向を右にする
+    """
+
     def __init__(self, master: tk.Tk, app_state: AppState, sig_param: SignalParam, player_param: PlayerState):
         super().__init__(master)
 
@@ -33,6 +47,7 @@ class Application(tk.Frame):
 
     def on_close_botton_click(self) -> None:
         """ウィンドウの閉じる[x]ボタンを押したときの処理"""
+        self.master.destroy()
         self._app_state.is_running = False
 
     def create_widgets(self) -> None:
@@ -87,5 +102,8 @@ class Application(tk.Frame):
 
 def show_gui(app_state: AppState, player_param: PlayerState, sig_param: SignalParam) -> None:
     """アプリGUI画面を表示する"""
-    app = Application(tk.Tk(), app_state, sig_param, player_param)
-    app.mainloop()
+    try:
+        app = Application(tk.Tk(), app_state, sig_param, player_param)
+        app.mainloop()
+    except KeyboardInterrupt:
+        app.master.destroy()
