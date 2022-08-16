@@ -112,7 +112,7 @@ def main() -> None:
 
         # RaspberryPi環境でのみ動作する
         try:
-            from iraira.switch import switch_listener
+            from iraira.gpio_raspi import switch_listener
 
             f = loop.run_in_executor(pool, switch_listener, app_state, signal_param)
             futures.append(f)
