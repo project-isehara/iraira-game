@@ -3,11 +3,9 @@ from __future__ import annotations
 import asyncio
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor
-from functools import partial
 
-from iraira.keyboard import AppCommand, keyboard_listener
 from iraira.player import PlayerState, SignalParam, play
-from iraira.state import AppState, SharedAppState, SharedPlayerState, SharedSignalParam
+from iraira.state import SharedAppState, SharedPlayerState, SharedSignalParam
 
 
 def print_info(player_param: PlayerState, sig_param: SignalParam) -> None:
@@ -20,43 +18,6 @@ def print_info(player_param: PlayerState, sig_param: SignalParam) -> None:
         f"play: {'playing' if player_param.is_running else 'stop':>7}",
         end="",
     )
-
-
-def execute_command(
-    app_key: AppCommand,
-    app_state: AppState,
-    player_param: PlayerState,
-    sig_param: SignalParam,
-) -> None:
-    """AppCommandに対応するアプリ動作をする"""
-
-    if app_key == AppCommand.app_stop:
-        app_state.is_running = False
-
-    elif app_key == AppCommand.pause:
-        player_param.change_play_state()
-
-    elif app_key == AppCommand.volume_up:
-        player_param.volume_up()
-    elif app_key == AppCommand.volume_down:
-        player_param.volume_down()
-
-    elif app_key == AppCommand.traction_up:
-        sig_param.traction_up()
-    elif app_key == AppCommand.traction_down:
-        sig_param.traction_down()
-
-    elif app_key == AppCommand.frequency_up:
-        sig_param.frequency_up()
-    elif app_key == AppCommand.frequency_down:
-        sig_param.frequency_down()
-
-    elif app_key == AppCommand.anti_node_up:
-        sig_param.count_anti_node_up()
-    elif app_key == AppCommand.anti_node_down:
-        sig_param.count_anti_node_down()
-
-    print_info(player_param, sig_param)
 
 
 def main() -> None:
@@ -72,41 +33,47 @@ def main() -> None:
 
         print_info(player_state, signal_param)
 
-        partial_execute_command = partial(
-            execute_command,
-            app_state=app_state,
-            player_param=player_state,
-            sig_param=signal_param,
-        )
+        futures = []
 
-        f1 = loop.run_in_executor(
-            pool,
-            keyboard_listener,
-            partial_execute_command,
-            app_state,
-        )
+        # # キーボード入力 GUIで実施するので一旦停止
+        # from functools import partial
+        # from iraira.keyboard import execute_command, keyboard_listener
 
-        f2 = loop.run_in_executor(
+        # partial_execute_command = partial(
+        #     execute_command,
+        #     app_state=app_state,
+        #     player_param=player_state,
+        #     sig_param=signal_param,
+        # )
+        # f = loop.run_in_executor(
+        #     pool,
+        #     keyboard_listener,
+        #     partial_execute_command,
+        #     app_state,
+        # )
+        # futures.append(f)
+
+        future_play = loop.run_in_executor(
             pool,
             play,
             app_state,
             player_state,
             signal_param,
         )
-        futures = [f1, f2]
+        futures.append(future_play)
 
         # GUIがある環境でのみ動作する
         try:
             from iraira.gui import show_gui
 
-            f = loop.run_in_executor(
+            future_gui = loop.run_in_executor(
                 pool,
                 show_gui,
                 app_state,
                 player_state,
                 signal_param,
             )
-            futures.append(f)
+            futures.append(future_gui)
         except RuntimeError as e:
             print(f"tkinter: {e}")
 
@@ -114,10 +81,15 @@ def main() -> None:
         try:
             from iraira.gpio_raspi import switch_listener
 
-            f = loop.run_in_executor(pool, switch_listener, app_state, signal_param)
-            futures.append(f)
+            future_gpio = loop.run_in_executor(pool, switch_listener, app_state, signal_param)
+            futures.append(future_gpio)
         except RuntimeError as e:
             print(f"RPi.GPIO: {e}")
 
         f = asyncio.gather(*futures, return_exceptions=True)
-        loop.run_until_complete(f)
+        try:
+            loop.run_until_complete(f)
+        except KeyboardInterrupt:
+            f.cancel()
+        finally:
+            loop.close()

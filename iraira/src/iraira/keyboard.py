@@ -3,7 +3,7 @@ from enum import Enum, auto
 
 import readchar
 
-from iraira.state import AppState
+from iraira.state import AppState, PlayerState, SignalParam
 
 
 class AppCommand(Enum):
@@ -23,6 +23,43 @@ class AppCommand(Enum):
 
     anti_node_up = auto()
     anti_node_down = auto()
+
+
+def execute_command(
+    app_key: AppCommand,
+    app_state: AppState,
+    player_param: PlayerState,
+    sig_param: SignalParam,
+) -> None:
+    """AppCommandに対応するアプリ動作をする"""
+
+    if app_key == AppCommand.app_stop:
+        app_state.is_running = False
+
+    elif app_key == AppCommand.pause:
+        player_param.change_play_state()
+
+    elif app_key == AppCommand.volume_up:
+        player_param.volume_up()
+    elif app_key == AppCommand.volume_down:
+        player_param.volume_down()
+
+    elif app_key == AppCommand.traction_up:
+        sig_param.traction_up()
+    elif app_key == AppCommand.traction_down:
+        sig_param.traction_down()
+
+    elif app_key == AppCommand.frequency_up:
+        sig_param.frequency_up()
+    elif app_key == AppCommand.frequency_down:
+        sig_param.frequency_down()
+
+    elif app_key == AppCommand.anti_node_up:
+        sig_param.count_anti_node_up()
+    elif app_key == AppCommand.anti_node_down:
+        sig_param.count_anti_node_down()
+
+    # print_info(player_param, sig_param)
 
 
 def keyboard_listener(
