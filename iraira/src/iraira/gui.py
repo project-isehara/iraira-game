@@ -116,7 +116,7 @@ class App(tk.Tk):
             status_text = (
                 f"volume {self._player_param.volume:.1f}\n"
                 f"traction: {self._sig_param.traction_direction:>4}\n"
-                f"play: {'playing' if self._player_param.is_running else 'stop':>7}"
+                f"play: {'playing' if self._player_param.play_state else 'stop':>7}"
             )
             return tk.Label(
                 page_game,
@@ -132,7 +132,7 @@ class App(tk.Tk):
                 text=(
                     f"volume  : {self._player_param.volume:.1f}\n"
                     f"traction: {self._sig_param.traction_direction:>4}\n"
-                    f"play    : {'playing' if self._player_param.is_running else 'stop':>7}"
+                    f"play    : {'playing' if self._player_param.play_state else 'stop':>7}"
                 )
             )
 
@@ -225,9 +225,11 @@ class App(tk.Tk):
 
         elif page == App.Page.GAME:
             self._page_game.tkraise()
+            self._player_param.play_state = True
 
         elif page == App.Page.RESULT:
             self._page_result.tkraise()
+            self._player_param.play_state = False
 
         self._current_page = page
 

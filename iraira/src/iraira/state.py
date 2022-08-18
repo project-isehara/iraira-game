@@ -60,7 +60,11 @@ class PlayerState(Protocol):
         ...
 
     @property
-    def is_running(self) -> bool:
+    def play_state(self) -> bool:
+        ...
+
+    @play_state.setter
+    def play_state(self, value: bool) -> None:
         ...
 
     def volume_up(self) -> None:
@@ -88,8 +92,12 @@ class SharedPlayerState:
         return self._raw["fs"]
 
     @property
-    def is_running(self) -> bool:
-        return self._raw["is_running"]
+    def play_state(self) -> bool:
+        return self._raw["play_state"]
+
+    @play_state.setter
+    def play_state(self, value: bool) -> None:
+        self._raw["play_state"] = value
 
     @property
     def volume(self) -> float:
@@ -110,7 +118,7 @@ class SharedPlayerState:
         self._raw["volume"] = v
 
     def change_play_state(self) -> None:
-        self._raw["is_running"] = not self._raw["is_running"]
+        self._raw["play_state"] = not self._raw["play_state"]
 
     @staticmethod
     def get(d: DictProxy) -> SharedPlayerState:
@@ -121,11 +129,11 @@ class SharedPlayerState:
         d: DictProxy,
         fs: int = 44_100,
         volume: float = 0.5,
-        is_running: bool = True,
+        play_state: bool = False,
     ) -> SharedPlayerState:
         d["fs"] = fs
         d["volume"] = volume
-        d["is_running"] = is_running
+        d["play_state"] = play_state
         return SharedPlayerState(d)
 
 

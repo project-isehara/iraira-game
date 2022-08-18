@@ -86,7 +86,7 @@ def play(app_state: AppState, player_param: PlayerState, sig_param: SignalParam)
         player.start()
 
         while app_state.is_running:
-            if not player_param.is_running:
+            if not player_param.play_state:
                 player.stop()
                 continue
             else:
