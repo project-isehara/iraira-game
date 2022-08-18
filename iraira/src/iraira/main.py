@@ -5,7 +5,7 @@ import multiprocessing
 from concurrent.futures import ProcessPoolExecutor
 
 from iraira.player import PlayerState, SignalParam, play
-from iraira.state import AppState, SharedAppState, SharedPlayerState, SharedSignalParam
+from iraira.state import SharedAppState, SharedPlayerState, SharedSignalParam
 
 
 def print_info(player_param: PlayerState, sig_param: SignalParam) -> None:
@@ -18,17 +18,6 @@ def print_info(player_param: PlayerState, sig_param: SignalParam) -> None:
         f"play: {'playing' if player_param.is_running else 'stop':>7}",
         end="",
     )
-
-
-# async def main_process(span: int, app_state: AppState) -> None:
-#     idx = 1
-#     while app_state.is_running:
-#         await asyncio.sleep(span)
-#         num_active_tasks = len([task for task in asyncio.all_tasks() if not task.done()])
-#         # if num_active_tasks == 1:
-#         #     break
-#         print(f"[run:{num_active_tasks}]{idx * span}秒経過")
-#         idx += 1
 
 
 def main() -> None:
