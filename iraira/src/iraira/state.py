@@ -50,6 +50,10 @@ class PlayerState(Protocol):
     def volume(self) -> float:
         ...
 
+    @volume.setter
+    def volume(self,v:float) -> None:
+        ...
+
     @property
     def is_running(self) -> bool:
         ...
@@ -85,6 +89,14 @@ class SharedPlayerState:
     @property
     def volume(self) -> float:
         return self._raw["volume"]
+
+    @volume.setter
+    def volume(self,v:float) -> None:
+        if v > 1:
+            v = 1
+        if v < 0:
+            v = 0
+        self._raw["volume"] = v
 
     def volume_up(self) -> None:
         v = self.volume

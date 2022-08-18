@@ -120,6 +120,16 @@ def main() -> None:
                 SharedSignalParam(signal_param_dict),
             )
             futures.append(f)
+
+            from iraira.analog_input import analog_listener
+            f_analog_input = loop.run_in_executor(
+                pool,
+                analog_listener,
+                SharedAppState(app_state_dict),
+                SharedSignalParam(signal_param_dict),
+                SharedPlayerState(player_state_dict)
+            )
+            futures.append(f_analog_input)
         except RuntimeError as e:
             print(e)
 
