@@ -28,7 +28,9 @@ void loop() {
   int readAnalogValue=analogRead(analogIn);
   float analogValue=(float)(readAnalogValue)/(MAX-MIN);
   uint8_t parallelOrg= (uint8_t)(analogValue*7);
-  SerialBT.printf("org:%d,converted:%d\r\n",readAnalogValue,parallelOrg);
+
+  Serial.printf("%.3f\n",analogValue);
+  SerialBT.printf("%.3f\n",analogValue);
 
   if(parallelOrg&(1<<0)){
     digitalWrite(parallelOut0,HIGH);
@@ -48,5 +50,5 @@ void loop() {
     digitalWrite(parallelOut2,LOW);
   }
   
-  delay(500);
+  delay(20);
 }
