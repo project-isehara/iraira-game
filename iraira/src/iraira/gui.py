@@ -3,16 +3,17 @@ from __future__ import annotations
 import tkinter as tk
 
 from iraira.player import SignalParam
-from iraira.state import AppState, PlayerState
+from iraira.state import AppState, PlayerState, GameState
 
 
 class Application(tk.Frame):
-    def __init__(self, master: tk.Tk, app_state: AppState, sig_param: SignalParam, player_param: PlayerState):
+    def __init__(self, master: tk.Tk, app_state: AppState, sig_param: SignalParam, player_param: PlayerState, game_state: GameState):
         super().__init__(master)
 
         self.app_state = app_state
         self.sig_param = sig_param
         self.player_param = player_param
+        self.game_state = game_state
 
         self.check_close()
 
@@ -33,7 +34,10 @@ class Application(tk.Frame):
             f"f: {self.sig_param.frequency:>4}\n"
             f"traction: {self.sig_param.traction_direction:>4}\n"
             f"count_anti_node: {self.sig_param.count_anti_node:>3}\n"
-            f"play: {'playing' if self.player_param.is_running else 'stop':>7}"
+            f"play: {'playing' if self.player_param.is_running else 'stop':>7}\n"
+            f"touch_count: {self.game_state.touch_count:>3}\n"
+            f"touch_time: {self.game_state.touch_time:.2f}\n"
+            f"isGoaled: {self.game_state.isGoaled}"
         )
         self.status = tk.Label(self, text=status_text, font=(None, 24), width="100", anchor=tk.W)
         self.status.pack()
@@ -53,7 +57,10 @@ class Application(tk.Frame):
                 f"f: {self.sig_param.frequency:>4}\n"
                 f"traction: {self.sig_param.traction_direction:>4}\n"
                 f"count_anti_node: {self.sig_param.count_anti_node:>3}\n"
-                f"play: {'playing' if self.player_param.is_running else 'stop':>7}"
+                f"play: {'playing' if self.player_param.is_running else 'stop':>7}\n"
+                f"touch_count: {self.game_state.touch_count:>3}\n"
+                f"touch_time: {self.game_state.touch_time:.2f}\n"
+                f"isGoaled: {self.game_state.isGoaled}"
             )
         )
 
@@ -80,8 +87,8 @@ class Application(tk.Frame):
         self.after(1000, self.check_close)
 
 
-def show_gui(app_state: AppState, player_param: PlayerState, sig_param: SignalParam) -> None:
+def show_gui(app_state: AppState, player_param: PlayerState, sig_param: SignalParam, game_state: GameState) -> None:
     """アプリGUI画面を表示する"""
     root = tk.Tk()
-    app = Application(root, app_state, sig_param, player_param)
+    app = Application(root, app_state, sig_param, player_param, game_state)
     app.mainloop()

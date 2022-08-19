@@ -9,7 +9,7 @@ from typing import Any
 from iraira.gui import show_gui
 from iraira.keyboard import AppCommand, keyboard_listener
 from iraira.player import PlayerState, SignalParam, play
-from iraira.state import AppState, SharedAppState, SharedPlayerState, SharedSignalParam
+from iraira.state import AppState, SharedAppState, SharedGameState, SharedPlayerState, SharedSignalParam
 
 
 def print_info(player_param: PlayerState, sig_param: SignalParam) -> None:
@@ -71,6 +71,7 @@ def main() -> None:
         app_state_dict: dict[str, Any] = manager.dict()
         player_state_dict = SharedPlayerState.setup_dict(manager.dict())
         signal_param_dict = SharedSignalParam.setup_dict(manager.dict())
+        game_state_dict = SharedGameState.setup_dict(manager.dict())
 
         SharedAppState(app_state_dict).is_running = True
 
@@ -107,20 +108,37 @@ def main() -> None:
             SharedAppState(app_state_dict),
             SharedPlayerState(player_state_dict),
             SharedSignalParam(signal_param_dict),
+            SharedGameState(game_state_dict)
         )
         futures = [f1, f2, f3]
 
+        # try:
+        #     from iraira.switch import switch_listener
+
+        #     f = loop.run_in_executor(
+        #         pool,
+        #         switch_listener,
+        #         SharedAppState(app_state_dict),
+        #         SharedSignalParam(signal_param_dict),
+        #     )
+        #     futures.append(f)
+
+        # except RuntimeError as e:
+        #     print(e)
+
+
         try:
-            from iraira.switch import switch_listener
-
-            f = loop.run_in_executor(
+            from iraira.touch_sensing import touch_listener
+            f_touch_sensing = loop.run_in_executor(
                 pool,
-                switch_listener,
-                SharedAppState(app_state_dict),
-                SharedSignalParam(signal_param_dict),
+                touch_listener,
+                SharedGameState(game_state_dict)
             )
-            futures.append(f)
+            futures.append(f_touch_sensing)
+        except RuntimeError as e:
+            print(e)
 
+        try:
             from iraira.analog_input import analog_listener
             f_analog_input = loop.run_in_executor(
                 pool,

@@ -1,5 +1,3 @@
-# pyright: reportGeneralTypeIssues=false
-from ipaddress import v6_int_to_packed
 import RPi.GPIO as GPIO
 
 from iraira.player import SignalParam
