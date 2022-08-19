@@ -21,6 +21,7 @@ pyaudio = [
 "RPi.GPIO" = [
     {version = "^0.7.1", markers = "platform_system == 'Linux'"},
 ]
+pyserial = "^3.5"
 
 [tool.poetry.dev-dependencies]
 black = "^22.3.0"

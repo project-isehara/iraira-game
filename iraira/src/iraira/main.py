@@ -5,7 +5,7 @@ import multiprocessing
 from concurrent.futures import ProcessPoolExecutor
 
 from iraira.player import PlayerState, SignalParam, play
-from iraira.state import SharedAppState, SharedPlayerState, SharedSignalParam
+from iraira.state import SharedAppState, SharedPlayerState, SharedSignalParam, SharedGameState
 
 
 def print_info(player_param: PlayerState, sig_param: SignalParam) -> None:
@@ -30,6 +30,7 @@ def main() -> None:
         app_state = SharedAppState.get_with_init(manager.dict())
         player_state = SharedPlayerState.get_with_init(manager.dict())
         signal_param = SharedSignalParam.get_with_init(manager.dict())
+        game_state_dict = SharedGameState.setup_dict(manager.dict())
 
         print_info(player_state, signal_param)
 
@@ -72,6 +73,7 @@ def main() -> None:
                 app_state,
                 player_state,
                 signal_param,
+                SharedGameState(game_state_dict)
             )
             futures.append(future_gui)
         except RuntimeError as e:
@@ -85,6 +87,30 @@ def main() -> None:
             futures.append(future_gpio)
         except RuntimeError as e:
             print(f"RPi.GPIO: {e}")
+
+        try:
+            from iraira.touch_sensing import touch_listener
+            f_touch_sensing = loop.run_in_executor(
+                pool,
+                touch_listener,
+                SharedGameState(game_state_dict)
+            )
+            futures.append(f_touch_sensing)
+        except RuntimeError as e:
+            print(e)
+
+        try:
+            from iraira.analog_input import analog_listener
+            f_analog_input = loop.run_in_executor(
+                pool,
+                analog_listener,
+                app_state,
+                signal_param,
+                player_state,
+            )
+            futures.append(f_analog_input)
+        except RuntimeError as e:
+            print(e)
 
         f = asyncio.gather(*futures, return_exceptions=True)
         try:

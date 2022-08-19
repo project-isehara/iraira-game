@@ -4,7 +4,7 @@ import tkinter as tk
 from enum import Enum, auto
 
 from iraira.player import SignalParam
-from iraira.state import AppState, PlayerState
+from iraira.state import AppState, PlayerState, GameState
 
 
 class App(tk.Tk):
@@ -30,12 +30,13 @@ class App(tk.Tk):
         GAME = auto()
         RESULT = auto()
 
-    def __init__(self, app_state: AppState, sig_param: SignalParam, player_param: PlayerState) -> None:
+    def __init__(self, app_state: AppState, sig_param: SignalParam, player_param: PlayerState, game_state: GameState) -> None:
         tk.Tk.__init__(self)
 
         self._app_state = app_state
         self._sig_param = sig_param
         self._player_param = player_param
+        self.game_state = game_state
 
         # 画面設定
         self.title("")
@@ -116,7 +117,10 @@ class App(tk.Tk):
             status_text = (
                 f"volume {self._player_param.volume:.1f}\n"
                 f"traction: {self._sig_param.traction_direction:>4}\n"
-                f"play: {'playing' if self._player_param.play_state else 'stop':>7}"
+                f"play: {'playing' if self._player_param.play_state else 'stop':>7}\n"
+                f"touch_count: {self.game_state.touch_count:>3}\n"
+                f"touch_time: {self.game_state.touch_time:.2f}\n"
+                f"isGoaled: {self.game_state.isGoaled}"
             )
             return tk.Label(
                 page_game,
@@ -132,7 +136,10 @@ class App(tk.Tk):
                 text=(
                     f"volume  : {self._player_param.volume:.1f}\n"
                     f"traction: {self._sig_param.traction_direction:>4}\n"
-                    f"play    : {'playing' if self._player_param.play_state else 'stop':>7}"
+                    f"play    : {'playing' if self._player_param.play_state else 'stop':>7}\n"
+                    f"touch_count: {self.game_state.touch_count:>3}\n"
+                    f"touch_time: {self.game_state.touch_time:.2f}\n"
+                    f"isGoaled: {self.game_state.isGoaled}"
                 )
             )
 
@@ -234,7 +241,7 @@ class App(tk.Tk):
         self._current_page = page
 
 
-def show_gui(app_state: AppState, player_param: PlayerState, sig_param: SignalParam) -> None:
+def show_gui(app_state: AppState, player_param: PlayerState, sig_param: SignalParam, game_state: GameState) -> None:
     """アプリGUI画面を表示する"""
     try:
         app = App(app_state, sig_param, player_param)
