@@ -26,7 +26,7 @@ def main() -> None:
     # キーボードからのコマンド読み取りと音の再生を別プロセスで実行する。
     # マルチプロセス: ProcessPoolExecutor
     # プロセス間通信: multiprocessing#Manager
-    with multiprocessing.Manager() as manager, ProcessPoolExecutor() as pool:
+    with multiprocessing.Manager() as manager, ProcessPoolExecutor(max_workers = 10) as pool:
         app_state = SharedAppState.get_with_init(manager.dict())
         player_state = SharedPlayerState.get_with_init(manager.dict())
         signal_param = SharedSignalParam.get_with_init(manager.dict())
@@ -79,6 +79,7 @@ def main() -> None:
         except RuntimeError as e:
             print(f"tkinter: {e}")
 
+
         # RaspberryPi環境でのみ動作する
         try:
             from iraira.gpio_raspi import switch_listener
@@ -87,17 +88,6 @@ def main() -> None:
             futures.append(future_gpio)
         except RuntimeError as e:
             print(f"RPi.GPIO: {e}")
-
-        try:
-            from iraira.touch_sensing import touch_listener
-            f_touch_sensing = loop.run_in_executor(
-                pool,
-                touch_listener,
-                SharedGameState(game_state_dict)
-            )
-            futures.append(f_touch_sensing)
-        except RuntimeError as e:
-            print(e)
 
         try:
             from iraira.analog_input import analog_listener
@@ -109,6 +99,18 @@ def main() -> None:
                 player_state,
             )
             futures.append(f_analog_input)
+        except RuntimeError as e:
+            print(e)
+
+        try:
+            from iraira.touch_sensing import touch_listener
+            f_touch_sensing = loop.run_in_executor(
+                pool,
+                touch_listener,
+                app_state,
+                SharedGameState(game_state_dict)
+            )
+            futures.append(f_touch_sensing)
         except RuntimeError as e:
             print(e)
 

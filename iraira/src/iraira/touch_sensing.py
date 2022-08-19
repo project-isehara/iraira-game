@@ -1,7 +1,7 @@
 # pyright: reportGeneralTypeIssues=false
 import RPi.GPIO as GPIO
 
-from iraira.state import GameState
+from iraira.state import AppState,GameState
 import time
 
 GPIO_1ST_STAGE = 26
@@ -19,12 +19,13 @@ POLLING_INTERVAL = 0.02 #sec
 INVINCIBLE_INTERVAL = 0.2 #sec
 
 def touch_listener(
+    app_state: AppState,
     game_state: GameState,
 ) -> None:
     lastTouchedTime:float = 0.0
     isTouching:bool = False
     elapsedTime:float = 0.0
-    while True:
+    while app_state.is_running:
         if GPIO.input(GPIO_1ST_STAGE) == 0 or GPIO.input(GPIO_2ND_STAGE) == 0:
             elapsedTime = time.time() - lastTouchedTime
             if not isTouching:

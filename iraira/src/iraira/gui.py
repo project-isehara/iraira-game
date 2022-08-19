@@ -244,7 +244,7 @@ class App(tk.Tk):
 def show_gui(app_state: AppState, player_param: PlayerState, sig_param: SignalParam, game_state: GameState) -> None:
     """アプリGUI画面を表示する"""
     try:
-        app = App(app_state, sig_param, player_param)
+        app = App(app_state, sig_param, player_param, game_state)
         app.mainloop()
 
     except KeyboardInterrupt:
