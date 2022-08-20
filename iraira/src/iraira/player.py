@@ -1,13 +1,25 @@
 from __future__ import annotations
 
+import wave
 from functools import lru_cache
+from pathlib import Path
 
 import numpy as np
 import numpy.typing as npt
 import pyaudio
 
-from iraira.state import AppState, PlayerState, SignalParam, TractionDirection
+from iraira.state import AppState, GameState, PlayerState, SignalParam, TractionDirection
 from iraira.traction_wave import traction_wave
+
+
+def read_wav(file: Path) -> npt.NDArray[np.float32]:
+    with wave.open(str(file), "rb") as fr:
+        frame = fr.readframes(fr.getnframes())
+
+    return np.frombuffer(frame, dtype=np.float32)
+
+
+_signal_touch_wall: npt.NDArray[np.float32] = read_wav(Path(__file__).resolve().parents[2] / "assert" / "魔王魂  戦闘09.wav")
 
 
 class Player:
@@ -75,13 +87,17 @@ def create_traction_wave(
     return sig
 
 
-def play(app_state: AppState, player_param: PlayerState, sig_param: SignalParam) -> None:
+def play(app_state: AppState, player_param: PlayerState, sig_param: SignalParam, game_state: GameState) -> None:
     """音声出力
 
     :param app_state: アプリ状態
     :param player_param: プレイヤー状態
     :param sig_param: 信号状態
+    :param game_param: ゲーム状態
     """
+
+    touch_count = 0
+
     with Player(player_param) as player:
         player.start()
 
@@ -92,10 +108,15 @@ def play(app_state: AppState, player_param: PlayerState, sig_param: SignalParam)
             else:
                 player.start()
 
-            sig = create_traction_wave(
-                player_param.fs,
-                sig_param.frequency,
-                sig_param.traction_direction,
-                sig_param.count_anti_node,
-            )
+            if touch_count != game_state.touch_count:
+                touch_count = game_state.touch_count
+                sig = _signal_touch_wall
+            else:
+                sig = create_traction_wave(
+                    player_param.fs,
+                    sig_param.frequency,
+                    sig_param.traction_direction,
+                    sig_param.count_anti_node,
+                )
+
             player.write(sig)
