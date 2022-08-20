@@ -36,24 +36,6 @@ def main() -> None:
 
         futures = []
 
-        # # キーボード入力 GUIで実施するので一旦停止
-        # from functools import partial
-        # from iraira.keyboard import execute_command, keyboard_listener
-
-        # partial_execute_command = partial(
-        #     execute_command,
-        #     app_state=app_state,
-        #     player_param=player_state,
-        #     sig_param=signal_param,
-        # )
-        # f = loop.run_in_executor(
-        #     pool,
-        #     keyboard_listener,
-        #     partial_execute_command,
-        #     app_state,
-        # )
-        # futures.append(f)
-
         future_play = loop.run_in_executor(
             pool,
             play,
