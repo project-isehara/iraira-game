@@ -39,7 +39,7 @@ class App(tk.Tk):
         self._app_state = app_state
         self._sig_param = sig_param
         self._player_param = player_param
-        self.game_state = game_state
+        self._game_state = game_state
 
         # 画面設定
         self.title("")
@@ -62,6 +62,7 @@ class App(tk.Tk):
         self._current_page: App.Page
         self._create_page()
         self.change_page(App.Page.TITLE)
+        self._check_game_goal()
 
     def _create_page(self) -> None:
         """ページGUIの構築"""
@@ -117,17 +118,8 @@ class App(tk.Tk):
             )
 
         def app_status_label() -> tk.Label:
-            status_text = (
-                f"volume {self._player_param.volume:.1f}\n"
-                f"traction: {self._sig_param.traction_direction:>4}\n"
-                f"play: {'playing' if self._player_param.play_state else 'stop':>7}\n"
-                f"touch_count: {self.game_state.touch_count:>3}\n"
-                f"touch_time: {self.game_state.touch_time:.2f}\n"
-                f"isGoaled: {self.game_state.is_goaled}"
-            )
             return tk.Label(
                 page_game,
-                text=status_text,
                 font=(None, 24),
                 # width="100",
                 justify=tk.LEFT,
@@ -140,9 +132,9 @@ class App(tk.Tk):
                     f"volume  : {self._player_param.volume:.1f}\n"
                     f"traction: {self._sig_param.traction_direction:>4}\n"
                     f"play    : {'playing' if self._player_param.play_state else 'stop':>7}\n"
-                    f"touch_count: {self.game_state.touch_count:>3}\n"
-                    f"touch_time: {self.game_state.touch_time:.2f}\n"
-                    f"isGoaled: {self.game_state.is_goaled}"
+                    f"touch_count: {self._game_state.touch_count:>3}\n"
+                    f"touch_time: {self._game_state.touch_time:.2f}\n"
+                    f"isGoaled: {self._game_state.is_goaled}"
                 )
             )
 
@@ -192,6 +184,14 @@ class App(tk.Tk):
         self.destroy()
         self._app_state.is_running = False
 
+    def _check_game_goal(self) -> None:
+        """ゲーム画面でゴール時の画面遷移処理"""
+        if self._current_page == App.Page.GAME and self._game_state.is_goaled:
+            self.change_page(App.Page.RESULT)
+            self._game_state.is_goaled = False
+
+        self.after(1000, self._check_game_goal)
+
     def _input_key(self, event: tk.Event) -> None:
         """キーボードイベント処理"""
         self._key_event = event
@@ -224,6 +224,14 @@ class App(tk.Tk):
 
             elif event.keysym_num == 65364:  # key: Down
                 self._player_param.volume_down()
+
+            # デバッグ用: ゲームゴール
+            elif event.keysym_num == 103:  # key: g
+                self._game_state.is_goaled = True
+
+            # デバッグ用: ゲーム途中終了
+            elif event.keysym_num == 119:  # key: w
+                self.change_page(App.Page.TITLE)
 
         elif self._current_page == App.Page.RESULT:
             if event.keysym_num == 65293:  # key: Return
