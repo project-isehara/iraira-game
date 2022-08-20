@@ -4,7 +4,7 @@ import tkinter as tk
 from enum import Enum, auto
 
 from iraira.player import SignalParam
-from iraira.state import AppState, PlayerState, GameState
+from iraira.state import AppState, GameState, PlayerState
 
 
 class App(tk.Tk):
@@ -30,7 +30,9 @@ class App(tk.Tk):
         GAME = auto()
         RESULT = auto()
 
-    def __init__(self, app_state: AppState, sig_param: SignalParam, player_param: PlayerState, game_state: GameState) -> None:
+    def __init__(
+        self, app_state: AppState, sig_param: SignalParam, player_param: PlayerState, game_state: GameState
+    ) -> None:
         tk.Tk.__init__(self)
 
         self._app_state = app_state
