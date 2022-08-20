@@ -30,26 +30,20 @@ def main() -> None:
         app_state = SharedAppState.get_with_init(manager.dict())
         player_state = SharedPlayerState.get_with_init(manager.dict())
         signal_param = SharedSignalParam.get_with_init(manager.dict())
-        game_state_dict = SharedGameState.get_with_init(manager.dict())
+        game_state = SharedGameState.get_with_init(manager.dict())
 
         print_info(player_state, signal_param)
 
         futures = []
 
-        future_play = loop.run_in_executor(
-            pool,
-            play,
-            app_state,
-            player_state,
-            signal_param,
-        )
+        future_play = loop.run_in_executor(pool, play, app_state, player_state, signal_param, game_state)
         futures.append(future_play)
 
         # GUIがある環境でのみ動作する
         try:
             from iraira.gui import show_gui
 
-            future_gui = loop.run_in_executor(pool, show_gui, app_state, player_state, signal_param, game_state_dict)
+            future_gui = loop.run_in_executor(pool, show_gui, app_state, player_state, signal_param, game_state)
             futures.append(future_gui)
         except RuntimeError as e:
             print(f"tkinter: {e}")
@@ -66,13 +60,7 @@ def main() -> None:
         try:
             from iraira.analog_input import analog_listener
 
-            f_analog_input = loop.run_in_executor(
-                pool,
-                analog_listener,
-                app_state,
-                signal_param,
-                player_state,
-            )
+            f_analog_input = loop.run_in_executor(pool, analog_listener, app_state, signal_param, player_state)
             futures.append(f_analog_input)
         except RuntimeError as e:
             print(e)
@@ -80,7 +68,7 @@ def main() -> None:
         try:
             from iraira.touch_sensing import touch_listener
 
-            f_touch_sensing = loop.run_in_executor(pool, touch_listener, app_state, game_state_dict)
+            f_touch_sensing = loop.run_in_executor(pool, touch_listener, app_state, game_state)
             futures.append(f_touch_sensing)
         except RuntimeError as e:
             print(e)
