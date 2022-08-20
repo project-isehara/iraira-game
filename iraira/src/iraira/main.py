@@ -30,7 +30,7 @@ def main() -> None:
         app_state = SharedAppState.get_with_init(manager.dict())
         player_state = SharedPlayerState.get_with_init(manager.dict())
         signal_param = SharedSignalParam.get_with_init(manager.dict())
-        game_state_dict = SharedGameState.setup_dict(manager.dict())
+        game_state_dict = SharedGameState.get_with_init(manager.dict())
 
         print_info(player_state, signal_param)
 
@@ -67,9 +67,7 @@ def main() -> None:
         try:
             from iraira.gui import show_gui
 
-            future_gui = loop.run_in_executor(
-                pool, show_gui, app_state, player_state, signal_param, SharedGameState(game_state_dict)
-            )
+            future_gui = loop.run_in_executor(pool, show_gui, app_state, player_state, signal_param, game_state_dict)
             futures.append(future_gui)
         except RuntimeError as e:
             print(f"tkinter: {e}")
@@ -100,7 +98,7 @@ def main() -> None:
         try:
             from iraira.touch_sensing import touch_listener
 
-            f_touch_sensing = loop.run_in_executor(pool, touch_listener, app_state, SharedGameState(game_state_dict))
+            f_touch_sensing = loop.run_in_executor(pool, touch_listener, app_state, game_state_dict)
             futures.append(f_touch_sensing)
         except RuntimeError as e:
             print(e)

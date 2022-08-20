@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 import tkinter as tk
 from enum import Enum, auto
 
@@ -122,7 +123,7 @@ class App(tk.Tk):
                 f"play: {'playing' if self._player_param.play_state else 'stop':>7}\n"
                 f"touch_count: {self.game_state.touch_count:>3}\n"
                 f"touch_time: {self.game_state.touch_time:.2f}\n"
-                f"isGoaled: {self.game_state.isGoaled}"
+                f"isGoaled: {self.game_state.is_goaled}"
             )
             return tk.Label(
                 page_game,
@@ -141,7 +142,7 @@ class App(tk.Tk):
                     f"play    : {'playing' if self._player_param.play_state else 'stop':>7}\n"
                     f"touch_count: {self.game_state.touch_count:>3}\n"
                     f"touch_time: {self.game_state.touch_time:.2f}\n"
-                    f"isGoaled: {self.game_state.isGoaled}"
+                    f"isGoaled: {self.game_state.is_goaled}"
                 )
             )
 
@@ -253,4 +254,5 @@ def show_gui(app_state: AppState, player_param: PlayerState, sig_param: SignalPa
         app.destroy()
 
     except Exception as e:
-        print(e)
+        print(f"{__file__}: {e}")
+        sys.exit(e)

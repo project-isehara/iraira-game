@@ -285,11 +285,11 @@ class GameState(Protocol):
         ...
 
     @property
-    def isGoaled(self) -> bool:
+    def is_goaled(self) -> bool:
         ...
 
-    @isGoaled.setter
-    def isGoaled(self, isGoaled) -> None:
+    @is_goaled.setter
+    def is_goaled(self, value: bool) -> None:
         ...
 
     def increment_touch_count(self) -> None:
@@ -317,12 +317,12 @@ class SharedGameState:
         return self._raw["touch_time"]
 
     @property
-    def isGoaled(self) -> bool:
+    def is_goaled(self) -> bool:
         return self._raw["isGoaled"]
 
-    @isGoaled.setter
-    def isGoaled(self, isGoaled) -> None:
-        self._raw["isGoaled"] = isGoaled
+    @is_goaled.setter
+    def is_goaled(self, value: bool) -> None:
+        self._raw["isGoaled"] = value
 
     def increment_touch_count(self) -> None:
         count = self._raw["touch_count"]
@@ -337,13 +337,17 @@ class SharedGameState:
         self._raw["touch_time"] = 0
 
     @staticmethod
-    def setup_dict(
+    def get(d: DictProxy) -> SharedGameState:
+        return SharedGameState(d)
+
+    @staticmethod
+    def get_with_init(
         d: DictProxy,
         touch_count: int = 0,
         touch_time: float = 0.0,
-        isGoaled: bool = False,
-    ) -> DictProxy:
+        is_goaled: bool = False,
+    ) -> SharedGameState:
         d["touch_count"] = touch_count
         d["touch_time"] = touch_time
-        d["isGoaled"] = isGoaled
-        return d
+        d["isGoaled"] = is_goaled
+        return SharedGameState(d)
