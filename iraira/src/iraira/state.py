@@ -60,7 +60,7 @@ class PlayerState(Protocol):
         ...
 
     @volume.setter
-    def volume(self,v:float) -> None:
+    def volume(self, value: float) -> None:
         ...
 
     @property
@@ -108,12 +108,12 @@ class SharedPlayerState:
         return self._raw["volume"]
 
     @volume.setter
-    def volume(self,v:float) -> None:
-        if v > 1:
-            v = 1
-        if v < 0:
-            v = 0
-        self._raw["volume"] = v
+    def volume(self, value: float) -> None:
+        if value > 1:
+            value = 1
+        if value < 0:
+            value = 0
+        self._raw["volume"] = value
 
     def volume_up(self) -> None:
         v = self.volume
@@ -272,6 +272,7 @@ class SharedSignalParam:
         d["count_anti_node"] = count_anti_node
         return SharedSignalParam(d)
 
+
 class GameState(Protocol):
     """ゲームの状態を管理"""
 
@@ -284,21 +285,22 @@ class GameState(Protocol):
         ...
 
     @property
-    def isGoaled(self) -> bool:
+    def is_goaled(self) -> bool:
         ...
 
-    @isGoaled.setter
-    def isGoaled(self,isGoaled) -> None:
+    @is_goaled.setter
+    def is_goaled(self, value: bool) -> None:
         ...
 
     def increment_touch_count(self) -> None:
         ...
 
-    def add_touch_time(self,touching_time:float) -> None:
+    def add_touch_time(self, touching_time: float) -> None:
         ...
 
-    def clear_game_state(self,touching_time:float) -> None:
+    def clear_game_state(self, touching_time: float) -> None:
         ...
+
 
 @dataclass
 class SharedGameState:
@@ -315,33 +317,37 @@ class SharedGameState:
         return self._raw["touch_time"]
 
     @property
-    def isGoaled(self) -> bool:
+    def is_goaled(self) -> bool:
         return self._raw["isGoaled"]
 
-    @isGoaled.setter
-    def isGoaled(self,isGoaled) -> None:
-        self._raw["isGoaled"]=isGoaled
+    @is_goaled.setter
+    def is_goaled(self, value: bool) -> None:
+        self._raw["isGoaled"] = value
 
     def increment_touch_count(self) -> None:
         count = self._raw["touch_count"]
-        self._raw["touch_count"] = count+1
+        self._raw["touch_count"] = count + 1
 
-    def add_touch_time(self,touching_time:float) -> None:
+    def add_touch_time(self, touching_time: float) -> None:
         current_touching_time = self._raw["touch_time"]
         self._raw["touch_time"] = current_touching_time + touching_time
 
-    def clear_game_state(self,touching_time:float) -> None:
-        self._raw["touch_count"] = 0 
-        self._raw["touch_time"] = 0 
+    def clear_game_state(self, touching_time: float) -> None:
+        self._raw["touch_count"] = 0
+        self._raw["touch_time"] = 0
 
     @staticmethod
-    def setup_dict(
+    def get(d: DictProxy) -> SharedGameState:
+        return SharedGameState(d)
+
+    @staticmethod
+    def get_with_init(
         d: DictProxy,
         touch_count: int = 0,
         touch_time: float = 0.0,
-        isGoaled: bool = False,
-    ) -> DictProxy:
-        d["touch_count"] = touch_count 
-        d["touch_time"] = touch_time 
-        d["isGoaled"] = isGoaled 
-        return d
+        is_goaled: bool = False,
+    ) -> SharedGameState:
+        d["touch_count"] = touch_count
+        d["touch_time"] = touch_time
+        d["isGoaled"] = is_goaled
+        return SharedGameState(d)

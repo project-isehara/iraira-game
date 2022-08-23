@@ -5,7 +5,7 @@ import multiprocessing
 from concurrent.futures import ProcessPoolExecutor
 
 from iraira.player import PlayerState, SignalParam, play
-from iraira.state import SharedAppState, SharedPlayerState, SharedSignalParam, SharedGameState
+from iraira.state import SharedAppState, SharedGameState, SharedPlayerState, SharedSignalParam
 
 
 def print_info(player_param: PlayerState, sig_param: SignalParam) -> None:
@@ -26,33 +26,15 @@ def main() -> None:
     # キーボードからのコマンド読み取りと音の再生を別プロセスで実行する。
     # マルチプロセス: ProcessPoolExecutor
     # プロセス間通信: multiprocessing#Manager
-    with multiprocessing.Manager() as manager, ProcessPoolExecutor(max_workers = 10) as pool:
+    with multiprocessing.Manager() as manager, ProcessPoolExecutor(max_workers=10) as pool:
         app_state = SharedAppState.get_with_init(manager.dict())
         player_state = SharedPlayerState.get_with_init(manager.dict())
         signal_param = SharedSignalParam.get_with_init(manager.dict())
-        game_state_dict = SharedGameState.setup_dict(manager.dict())
+        game_state_dict = SharedGameState.get_with_init(manager.dict())
 
         print_info(player_state, signal_param)
 
         futures = []
-
-        # # キーボード入力 GUIで実施するので一旦停止
-        # from functools import partial
-        # from iraira.keyboard import execute_command, keyboard_listener
-
-        # partial_execute_command = partial(
-        #     execute_command,
-        #     app_state=app_state,
-        #     player_param=player_state,
-        #     sig_param=signal_param,
-        # )
-        # f = loop.run_in_executor(
-        #     pool,
-        #     keyboard_listener,
-        #     partial_execute_command,
-        #     app_state,
-        # )
-        # futures.append(f)
 
         future_play = loop.run_in_executor(
             pool,
@@ -67,18 +49,10 @@ def main() -> None:
         try:
             from iraira.gui import show_gui
 
-            future_gui = loop.run_in_executor(
-                pool,
-                show_gui,
-                app_state,
-                player_state,
-                signal_param,
-                SharedGameState(game_state_dict)
-            )
+            future_gui = loop.run_in_executor(pool, show_gui, app_state, player_state, signal_param, game_state_dict)
             futures.append(future_gui)
         except RuntimeError as e:
             print(f"tkinter: {e}")
-
 
         # RaspberryPi環境でのみ動作する
         try:
@@ -91,6 +65,7 @@ def main() -> None:
 
         try:
             from iraira.analog_input import analog_listener
+
             f_analog_input = loop.run_in_executor(
                 pool,
                 analog_listener,
@@ -104,12 +79,8 @@ def main() -> None:
 
         try:
             from iraira.touch_sensing import touch_listener
-            f_touch_sensing = loop.run_in_executor(
-                pool,
-                touch_listener,
-                app_state,
-                SharedGameState(game_state_dict)
-            )
+
+            f_touch_sensing = loop.run_in_executor(pool, touch_listener, app_state, game_state_dict)
             futures.append(f_touch_sensing)
         except RuntimeError as e:
             print(e)
