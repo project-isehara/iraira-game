@@ -7,7 +7,7 @@ from iraira.state import AppState, GameState
 
 GPIO_1ST_STAGE = 21
 GPIO_START_POINT = 26
-GPIO_CHECK_POINT = 19 
+GPIO_CHECK_POINT = 19
 GPIO_GOAL_POINT = 13
 GPIO_2ND_STAGE = 6
 
