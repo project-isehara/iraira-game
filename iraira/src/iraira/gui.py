@@ -214,6 +214,7 @@ class App(tk.Tk):
         if self._current_page == App.Page.TITLE:
             if event.keysym_num == 65293:  # key: Return
                 self.change_page(App.Page.GAME)
+                self._game_state.clear_game_state()
 
         elif self._current_page == App.Page.GAME:
             if event.keysym_num == 65293:  # key: Return

@@ -298,7 +298,7 @@ class GameState(Protocol):
     def add_touch_time(self, touching_time: float) -> None:
         ...
 
-    def clear_game_state(self, touching_time: float) -> None:
+    def clear_game_state(self) -> None:
         ...
 
 
@@ -332,9 +332,10 @@ class SharedGameState:
         current_touching_time = self._raw["touch_time"]
         self._raw["touch_time"] = current_touching_time + touching_time
 
-    def clear_game_state(self, touching_time: float) -> None:
+    def clear_game_state(self) -> None:
         self._raw["touch_count"] = 0
         self._raw["touch_time"] = 0
+        self._raw["isGoaled"] = False
 
     @staticmethod
     def get(d: DictProxy) -> SharedGameState:

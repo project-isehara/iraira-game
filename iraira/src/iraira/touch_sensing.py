@@ -19,7 +19,7 @@ GPIO.setup(GPIO_2ND_STAGE, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(GPIO_GOAL_POINT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 POLLING_INTERVAL = 0.02  # sec
-INVINCIBLE_INTERVAL = 0.2  # sec
+INVINCIBLE_INTERVAL = 0.1  # sec
 
 GOAL_DETECTION_DURATION = 1.2  # sec
 START_DETECTION_DURATION = 1.2  # sec
@@ -63,7 +63,10 @@ def touch_listener(
             if GPIO.input(GPIO_START_POINT) == 0:
                 start_touching_time += POLLING_INTERVAL
                 if start_touching_time >= GOAL_DETECTION_DURATION + POLLING_INTERVAL:
-                    game_state.is_goaled = False
+                    game_state.clear_game_state()
+
+            else:
+                start_touching_time = 0
 
             time.sleep(POLLING_INTERVAL)
 
