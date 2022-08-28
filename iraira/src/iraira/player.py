@@ -14,7 +14,7 @@ from iraira.state import AppState, GameState, PlayerState, SignalParam, Traction
 from iraira.traction_wave import traction_wave
 
 _assert_path = Path(__file__).resolve().parents[2] / "assert"
-_sound_touch_wall_1_path = _assert_path / "魔王魂  戦闘09.wav"
+_sound_touch_wall_1_path = _assert_path / "maouaudio/魔王魂  戦闘09.wav"
 _sound_touch_wall_2_path = _assert_path / "効果音ラボ/大砲2.wav"
 _sound_touch_wall_3_path = _assert_path / "効果音ラボ/爆発2.wav"
 _sound_goal_path = _assert_path / "nakano sound/ファンファーレ6（戦闘勝利＋BGM）.wav"
