@@ -6,6 +6,7 @@ from enum import Enum, auto
 
 from iraira.player import SignalParam
 from iraira.state import AppState, GameState, PlayerState
+from iraira.util import RepoPath
 
 
 class App(tk.Tk):
@@ -43,7 +44,7 @@ class App(tk.Tk):
 
         # 画面設定
         self.title("")
-        self.geometry("800x600")
+        self.geometry("1024x768")
         # ウィンドウのグリッドを 1x1 にする
         # この処理をコメントアウトすると配置がズレる
         self.grid_rowconfigure(0, weight=1)
@@ -75,6 +76,13 @@ class App(tk.Tk):
         page_title = tk.Frame()
         page_title.grid(row=0, column=0, sticky="nsew")
 
+        def background_image() -> tk.Canvas:
+            img_path = RepoPath().assert_dir / "DALL·E 2022-08-29 02.10.00 - maze_trim4x3.png"
+            self._background = tk.PhotoImage(file=str(img_path))  # 変数保持しないと表示されない
+            bg = tk.Canvas(page_title, width=1024, height=768)
+            bg.create_image(0, 0, anchor=tk.NW, image=self._background)
+            return bg
+
         def title_label() -> tk.Label:
             return tk.Label(page_title, text="妨害イライラ棒", font=(None, "80"))
 
@@ -96,8 +104,9 @@ class App(tk.Tk):
                 font=(None, "20"),
             )
 
+        background_image().place(relx=0, rely=0)
         title_label().pack(anchor=tk.CENTER, pady=30)
-        start_button().pack(anchor=tk.CENTER, pady=10)
+        start_button().pack(anchor=tk.CENTER, pady=20)
         start_key_label().pack(anchor=tk.CENTER)
         ranking_label().pack(anchor=tk.CENTER, pady=20)
         return page_title
