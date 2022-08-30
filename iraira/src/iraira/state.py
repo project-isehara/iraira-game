@@ -352,3 +352,47 @@ class SharedGameState:
         d["touch_time"] = touch_time
         d["isGoaled"] = is_goaled
         return SharedGameState(d)
+
+
+class GuiState(Protocol):
+    """ゲーム画面の管理"""
+
+    @property
+    def current_page(self) -> Page:
+        ...
+
+    @current_page.setter
+    def current_page(self, value: Page) -> None:
+        ...
+
+
+@dataclass
+class SharedGuiState:
+    """GuiStateの実装"""
+
+    _raw: DictProxy[str, Any]
+
+    @property
+    def current_page(self) -> Page:
+        return self._raw["current_page"]
+
+    @current_page.setter
+    def current_page(self, value: Page) -> None:
+        self._raw["current_page"] = value
+
+    @staticmethod
+    def get(d: DictProxy) -> SharedGuiState:
+        return SharedGuiState(d)
+
+    @staticmethod
+    def get_with_init(d: DictProxy) -> SharedGuiState:
+        d["current_page"] = Page.TITLE
+        return SharedGuiState(d)
+
+
+class Page(Enum):
+    """GUIの大画面項目"""
+
+    TITLE = auto()
+    GAME = auto()
+    RESULT = auto()

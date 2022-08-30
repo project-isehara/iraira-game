@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import sys
 import tkinter as tk
-from enum import Enum, auto
 
 from iraira.player import SignalParam
-from iraira.state import AppState, GameState, PlayerState
+from iraira.state import AppState, GameState, GuiState, Page, PlayerState
 from iraira.util import RepoPath
 
 
@@ -27,13 +26,13 @@ class App(tk.Tk):
     * 右矢印[→]: 牽引力振動の方向を右にする
     """
 
-    class Page(Enum):
-        TITLE = auto()
-        GAME = auto()
-        RESULT = auto()
-
     def __init__(
-        self, app_state: AppState, sig_param: SignalParam, player_param: PlayerState, game_state: GameState
+        self,
+        app_state: AppState,
+        sig_param: SignalParam,
+        player_param: PlayerState,
+        game_state: GameState,
+        gui_state: GuiState,
     ) -> None:
         tk.Tk.__init__(self)
 
@@ -44,9 +43,8 @@ class App(tk.Tk):
 
         # 画面設定
         self.title("")
-        self.geometry("1024x768")
-        # ウィンドウのグリッドを 1x1 にする
-        # この処理をコメントアウトすると配置がズレる
+        self.geometry("800x600")
+        # ウィンドウのグリッドを 1x1 にする この処理をコメントアウトすると配置がズレる
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
@@ -60,10 +58,13 @@ class App(tk.Tk):
         self._key_event: tk.Event
 
         # 画面ページ
-        self._current_page: App.Page
+        self._gui_state = gui_state
         self._create_page()
-        self.change_page(App.Page.TITLE)
         self._check_game_goal()
+
+        self._previus_page = None
+        self._check_current_page()
+        self._gui_state.current_page = Page.TITLE
 
     def _create_page(self) -> None:
         """ページGUIの構築"""
@@ -87,11 +88,14 @@ class App(tk.Tk):
             return tk.Label(page_title, text="妨害イライラ棒", font=(None, "80"))
 
         def start_button() -> tk.Button:
+            def go_to_game_page() -> None:
+                self._gui_state.current_page = Page.GAME
+
             return tk.Button(
                 page_title,
                 text="START",
                 font=(None, "60"),
-                command=lambda: self.change_page(App.Page.GAME),
+                command=lambda: go_to_game_page(),
             )
 
         def start_key_label() -> tk.Label:
@@ -157,7 +161,10 @@ class App(tk.Tk):
         update_app_status(app_status)
 
         # フレーム1からmainフレームに戻るボタン
-        back_button = tk.Button(page_game, text="Back", command=lambda: self.change_page(App.Page.TITLE))
+        def go_to_title_page() -> None:
+            self._gui_state.current_page = Page.TITLE
+
+        back_button = tk.Button(page_game, text="Back", command=lambda: go_to_title_page())
         back_button.pack()
 
         return page_game
@@ -183,7 +190,7 @@ class App(tk.Tk):
     def _check_close(self) -> None:
         """アプリの起動状態監視と終了処理"""
         if self._app_state.is_running:
-            self.after(1000, self._check_close)
+            self.after(500, self._check_close)
             return
 
         self.destroy()
@@ -195,11 +202,21 @@ class App(tk.Tk):
 
     def _check_game_goal(self) -> None:
         """ゲーム画面でゴール時の画面遷移処理"""
-        if self._current_page == App.Page.GAME and self._game_state.is_goaled:
-            self.change_page(App.Page.RESULT)
+        if self._gui_state.current_page == Page.GAME and self._game_state.is_goaled:
+            self._gui_state.current_page = Page.RESULT
             self._game_state.is_goaled = False
 
         self.after(1000, self._check_game_goal)
+
+    def _check_current_page(self) -> None:
+        """現在の表示すべきページの表示"""
+        current_page = self._gui_state.current_page
+
+        if current_page != self._previus_page:
+            self._previus_page = current_page
+            self.change_page(current_page)
+
+        self.after(200, self._check_current_page)
 
     def _input_key(self, event: tk.Event) -> None:
         """キーボードイベント処理"""
@@ -211,15 +228,17 @@ class App(tk.Tk):
             self._app_state.is_running = False
 
         # 画面ごとのイベント
-        if self._current_page == App.Page.TITLE:
+        if self._gui_state.current_page == Page.TITLE:
             if event.keysym_num == 65293:  # key: Return
-                self.change_page(App.Page.GAME)
+                self._gui_state.current_page = Page.GAME
                 self._game_state.clear_game_state()
 
-        elif self._current_page == App.Page.GAME:
+        elif self._gui_state.current_page == Page.GAME:
+            # 画面遷移
             if event.keysym_num == 65293:  # key: Return
-                self.change_page(App.Page.RESULT)
+                self._gui_state.current_page = Page.RESULT
 
+            # 操作
             elif event.keysym_num == 32:  # key: space
                 self._player_param.change_play_state()
 
@@ -241,31 +260,35 @@ class App(tk.Tk):
 
             # デバッグ用: ゲーム途中終了
             elif event.keysym_num == 119:  # key: w
-                self.change_page(App.Page.TITLE)
+                self._gui_state.current_page = Page.TITLE
 
-        elif self._current_page == App.Page.RESULT:
+        elif self._gui_state.current_page == Page.RESULT:
             if event.keysym_num == 65293:  # key: Return
-                self.change_page(App.Page.TITLE)
+                self._gui_state.current_page = Page.TITLE
 
-    def change_page(self, page: App.Page) -> None:
-        if page == App.Page.TITLE:
+    def change_page(self, page: Page) -> None:
+        if page == Page.TITLE:
             self._page_title.tkraise()
 
-        elif page == App.Page.GAME:
+        elif page == Page.GAME:
             self._page_game.tkraise()
             self._player_param.play_state = True
 
-        elif page == App.Page.RESULT:
+        elif page == Page.RESULT:
             self._page_result.tkraise()
             self._player_param.play_state = False
 
-        self._current_page = page
 
-
-def show_gui(app_state: AppState, player_param: PlayerState, sig_param: SignalParam, game_state: GameState) -> None:
+def show_gui(
+    app_state: AppState,
+    player_param: PlayerState,
+    sig_param: SignalParam,
+    game_state: GameState,
+    gui_state: GuiState,
+) -> None:
     """アプリGUI画面を表示する"""
     try:
-        app = App(app_state, sig_param, player_param, game_state)
+        app = App(app_state, sig_param, player_param, game_state, gui_state)
         app.mainloop()
 
     except KeyboardInterrupt:

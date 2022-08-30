@@ -5,7 +5,7 @@ import multiprocessing
 from concurrent.futures import ProcessPoolExecutor
 
 from iraira.player import PlayerState, SignalParam, play
-from iraira.state import SharedAppState, SharedGameState, SharedPlayerState, SharedSignalParam
+from iraira.state import SharedAppState, SharedGameState, SharedGuiState, SharedPlayerState, SharedSignalParam
 
 
 def print_info(player_param: PlayerState, sig_param: SignalParam) -> None:
@@ -31,22 +31,28 @@ def main() -> None:
         player_state = SharedPlayerState.get_with_init(manager.dict())
         signal_param = SharedSignalParam.get_with_init(manager.dict())
         game_state = SharedGameState.get_with_init(manager.dict())
+        gui_state = SharedGuiState.get_with_init(manager.dict())
 
         print_info(player_state, signal_param)
 
         futures = []
 
-        future_play = loop.run_in_executor(pool, play, app_state, player_state, signal_param, game_state)
-        futures.append(future_play)
+        try:
+            future_play = loop.run_in_executor(pool, play, app_state, player_state, signal_param, game_state)
+            futures.append(future_play)
+        except RuntimeError as e:
+            print(f"play module: {e}")
 
         # GUIがある環境でのみ動作する
         try:
             from iraira.gui import show_gui
 
-            future_gui = loop.run_in_executor(pool, show_gui, app_state, player_state, signal_param, game_state)
+            future_gui = loop.run_in_executor(
+                pool, show_gui, app_state, player_state, signal_param, game_state, gui_state
+            )
             futures.append(future_gui)
         except RuntimeError as e:
-            print(f"tkinter: {e}")
+            print(f"gui module: {e}")
 
         # RaspberryPi環境でのみ動作する
         try:
@@ -55,7 +61,7 @@ def main() -> None:
             future_gpio = loop.run_in_executor(pool, switch_listener, app_state, signal_param)
             futures.append(future_gpio)
         except RuntimeError as e:
-            print(f"RPi.GPIO: {e}")
+            print(f"gpio module: {e}")
 
         try:
             from iraira.analog_input import analog_listener
@@ -63,7 +69,7 @@ def main() -> None:
             f_analog_input = loop.run_in_executor(pool, analog_listener, app_state, signal_param, player_state)
             futures.append(f_analog_input)
         except RuntimeError as e:
-            print(e)
+            print(f"analog_input module: {e}")
 
         try:
             from iraira.touch_sensing import touch_listener
@@ -71,7 +77,7 @@ def main() -> None:
             f_touch_sensing = loop.run_in_executor(pool, touch_listener, app_state, game_state)
             futures.append(f_touch_sensing)
         except RuntimeError as e:
-            print(e)
+            print(f"touch_sensing module: {e}")
 
         f = asyncio.gather(*futures, return_exceptions=True)
         try:
