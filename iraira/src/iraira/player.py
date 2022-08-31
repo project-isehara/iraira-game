@@ -12,8 +12,9 @@ import pyaudio
 
 from iraira.state import AppState, GameState, PlayerState, SignalParam, TractionDirection
 from iraira.traction_wave import traction_wave
+from iraira.util import RepoPath
 
-_assert_path = Path(__file__).resolve().parents[2] / "assert"
+_assert_path = RepoPath().assert_dir
 _sound_touch_wall_1_path = _assert_path / "maouaudio/魔王魂  戦闘09.wav"
 _sound_touch_wall_2_path = _assert_path / "効果音ラボ/大砲2.wav"
 _sound_touch_wall_3_path = _assert_path / "効果音ラボ/爆発2.wav"
