@@ -69,7 +69,7 @@ class Player:
         self._py_audio.terminate()
 
     def write(self, sig: npt.NDArray[np.float32]) -> None:
-        self._stream.write((sig * self.param.volume).tobytes())
+        self._stream.write(sig.tobytes())
 
     def __enter__(self) -> Player:
         return self
@@ -136,14 +136,15 @@ def play(app_state: AppState, player_param: PlayerState, sig_param: SignalParam,
                     touch_count = game_state.touch_count
                     sig = game_sound.sound_touch_wall_random()
                 else:
-                    sig = create_traction_wave(
+                    traction_wave = create_traction_wave(
                         player_param.fs,
                         sig_param.frequency,
                         sig_param.traction_direction,
                         sig_param.count_anti_node,
                     )
-                touch_count = game_state.touch_count
+                    sig = traction_wave * player_param.volume
 
+                touch_count = game_state.touch_count
                 player.write(sig)
 
     except Exception as e:
