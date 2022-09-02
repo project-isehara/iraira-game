@@ -66,7 +66,7 @@ def main() -> None:
         try:
             from iraira.analog_input import analog_listener
 
-            f_analog_input = loop.run_in_executor(pool, analog_listener, app_state, signal_param, player_state)
+            f_analog_input = loop.run_in_executor(pool, analog_listener, app_state, signal_param, player_state,game_state,gui_state)
             futures.append(f_analog_input)
         except RuntimeError as e:
             print(f"analog_input module: {e}")
