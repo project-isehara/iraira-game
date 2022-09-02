@@ -3,7 +3,7 @@ import time
 
 import RPi.GPIO as GPIO
 
-from iraira.state import AppState, GameState,GuiState,Page
+from iraira.state import AppState, GameState, GuiState, Page
 
 GPIO_1ST_STAGE = 21
 GPIO_START_POINT = 26
@@ -18,7 +18,7 @@ GPIO.setup(GPIO_CHECK_POINT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(GPIO_2ND_STAGE, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(GPIO_GOAL_POINT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-POLLING_INTERVAL = 0.02  # sec
+POLLING_INTERVAL = 0.005  # sec
 INVINCIBLE_INTERVAL = 0.5  # sec
 
 GOAL_DETECTION_DURATION = 1.0  # sec
