@@ -29,7 +29,9 @@ class Result:
 
     @property
     def score(self) -> float:
-        return (200 - self.time_sec) - (self.touch_count * 3)
+        """スコアの算出"""
+        s = (200 - self.time_sec) - (self.touch_count * 4)
+        return 0 if s < 0 else s
 
 
 def read_results(count: int) -> list[Result]:
@@ -87,7 +89,7 @@ class App(tk.Tk):
 
         # 画面設定
         self.title("")
-        self.geometry("800x600")
+        self.geometry("1024x768")
         # ウィンドウのグリッドを 1x1 にする この処理をコメントアウトすると配置がズレる
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
@@ -146,8 +148,8 @@ class App(tk.Tk):
         current_page = self._gui_state.current_page
 
         if current_page != self._previus_page:
-            self._previus_page = current_page
             self.change_page(current_page)
+            self._previus_page = current_page
 
         self.after(200, self._check_current_page)
 
@@ -195,6 +197,10 @@ class App(tk.Tk):
             elif event.keysym_num == 119:  # key: w
                 self._gui_state.current_page = Page.TITLE
 
+            # デバッグ用: ゲーム途中終了
+            elif event.keysym_num == 114:  # key: r
+                self._game_state.increment_touch_count()
+
         elif self._gui_state.current_page == Page.RESULT:
             if event.keysym_num == 65293:  # key: Return
                 self._gui_state.current_page = Page.TITLE
@@ -203,6 +209,7 @@ class App(tk.Tk):
         if page == Page.TITLE:
             self._page_title.update_ranking()
             self._page_title.tkraise()
+            self._player_param.play_state = False
 
         elif page == Page.GAME:
             self._page_game.tkraise()
@@ -210,7 +217,7 @@ class App(tk.Tk):
 
         elif page == Page.RESULT:
             self._page_result.tkraise()
-            self._player_param.play_state = False
+            self._player_param.play_state = True
 
 
 class TitlePage(tk.Frame):
@@ -229,8 +236,8 @@ class TitlePage(tk.Frame):
         self.grid(row=0, column=0, sticky="nsew")
 
         self._create_background_image().place(relx=0, rely=0)
-        self._create_title_label().pack(anchor=tk.CENTER, pady=30)
-        self._create_start_button().pack(anchor=tk.CENTER, pady=20)
+        self._create_title_label().pack(anchor=tk.CENTER, pady=20)
+        self._create_start_button().pack(anchor=tk.CENTER, pady=10)
         self._ranking = tk.Frame(self)
 
     def _create_background_image(self) -> tk.Canvas:
@@ -241,7 +248,7 @@ class TitlePage(tk.Frame):
         return bg
 
     def _create_title_label(self) -> tk.Label:
-        return tk.Label(self, text="妨害イライラ棒", font=(None, "80"))
+        return tk.Label(self, text="妨害イライラ棒", font=(None, "70"))
 
     def _create_start_button(self) -> tk.Button:
         def go_to_game_page() -> None:
@@ -307,18 +314,33 @@ class GamePage(tk.Frame):
     def _create_game_page(self) -> None:
         self.grid(row=0, column=0, sticky="nsew")
 
-        self._create_title_label().pack(anchor=tk.CENTER, pady=30)
         self._create_game_status_label().pack(anchor=tk.CENTER, pady=10)
-        tk.Label(self, text="-" * 30).pack()
+        self._create_title_label().pack(anchor=tk.CENTER, pady=20)
+        self._create_traction_status().pack(anchor=tk.CENTER, pady=10)
 
         app_status = self._create_app_status_label()
         app_status.pack(anchor=tk.CENTER, pady=10)
         self.update_app_status(app_status)
 
     def _create_title_label(self) -> tk.Label:
-        return tk.Label(self, text="妨害イライラ棒", font=(None, "80"))
+        return tk.Label(self, text="妨害イライラ棒", font=(None, "70"))
+
+    def _create_traction_status(self) -> tk.Label:
+        f = tk.Frame(self)
+        tk.Label(f, text="⬅", font=(None, "200")).grid(column=0, row=0, sticky=tk.W, padx=5, pady=5)
+        tk.Label(f, text="ぼうがい！", font=(None, "40")).grid(column=1, row=0, sticky=tk.W, padx=5, pady=5)
+        tk.Label(f, text="➡", font=(None, "200")).grid(column=2, row=0, sticky=tk.W, padx=5, pady=5)
+
+        return f
 
     def _create_game_status_label(self) -> tk.Label:
+        f = tk.Frame(self)
+        tk.Label(f, text="").grid(column=0, row=0, sticky=tk.W, padx=5, pady=5)
+        tk.Label(f, text="NAME", font=(None, "15")).grid(column=1, row=0, sticky=tk.W, padx=5, pady=5)
+        tk.Label(f, text="TIME [s]", font=(None, "15")).grid(column=2, row=0, sticky=tk.W, padx=5, pady=5)
+        tk.Label(f, text="TOUCH", font=(None, "15")).grid(column=3, row=0, sticky=tk.W, padx=5, pady=5)
+        tk.Label(f, text="SCORE", font=(None, "15")).grid(column=4, row=0, sticky=tk.W, padx=5, pady=5)
+
         return tk.Label(
             self,
             text="妨害イライラ棒情報？\nライフポイント [#####      ]: \n接触時間: n [sec]\n接触回数: n [回]",
@@ -330,7 +352,6 @@ class GamePage(tk.Frame):
         return tk.Label(
             self,
             font=(None, 24),
-            # width="100",
             justify=tk.LEFT,
         )
 
@@ -341,9 +362,6 @@ class GamePage(tk.Frame):
                 f"volume  : {self._player_param.volume:.1f}\n"
                 f"traction: {self._sig_param.traction_direction:>4}\n"
                 f"play    : {'playing' if self._player_param.play_state else 'stop':>7}\n"
-                f"touch_count: {self._game_state.touch_count:>3}\n"
-                f"touch_time: {self._game_state.touch_time:.2f}\n"
-                f"isGoaled: {self._game_state.is_goaled}"
             )
         )
 
@@ -375,12 +393,12 @@ class ResultPage(tk.Frame):
     def _create_result_page(self) -> None:
         self.grid(row=0, column=0, sticky="nsew")
 
-        self._create_title_label().pack(anchor=tk.CENTER, pady=30)
+        self._create_title_label().pack(anchor=tk.CENTER, pady=20)
         self._create_goal_label().pack(anchor=tk.CENTER, pady=10)
         self._create_result_label().pack(anchor=tk.CENTER, pady=10)
 
     def _create_title_label(self) -> tk.Label:
-        return tk.Label(self, text="妨害イライラ棒", font=(None, "80"))
+        return tk.Label(self, text="妨害イライラ棒", font=(None, "70"))
 
     def _create_goal_label(self) -> tk.Label:
         return tk.Label(self, text="ゴール !!", font=(None, 48))

@@ -3,7 +3,7 @@ import time
 
 import RPi.GPIO as GPIO
 
-from iraira.state import AppState, GameState
+from iraira.state import AppState, GameState, GuiState, Page
 
 GPIO_1ST_STAGE = 21
 GPIO_START_POINT = 26
@@ -18,16 +18,17 @@ GPIO.setup(GPIO_CHECK_POINT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(GPIO_2ND_STAGE, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(GPIO_GOAL_POINT, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-POLLING_INTERVAL = 0.02  # sec
-INVINCIBLE_INTERVAL = 0.1  # sec
+POLLING_INTERVAL = 0.005  # sec
+INVINCIBLE_INTERVAL = 0.5  # sec
 
-GOAL_DETECTION_DURATION = 1.2  # sec
-START_DETECTION_DURATION = 1.2  # sec
+GOAL_DETECTION_DURATION = 1.0  # sec
+START_DETECTION_DURATION = 1.0  # sec
 
 
 def touch_listener(
     app_state: AppState,
     game_state: GameState,
+    gui_state: GuiState
 ) -> None:
     try:
         course_last_touched_time: float = 0.0
@@ -38,6 +39,13 @@ def touch_listener(
         start_touching_time: float = 0.0
 
         while app_state.is_running:
+            time.sleep(POLLING_INTERVAL)
+
+            if gui_state.current_page != Page.GAME:
+                goal_touching_time = 0.0
+                start_touching_time = 0.0
+                continue
+
             if GPIO.input(GPIO_1ST_STAGE) == 0 or GPIO.input(GPIO_2ND_STAGE) == 0:
                 course_elapsed_time = time.time() - course_last_touched_time
 
@@ -67,8 +75,6 @@ def touch_listener(
 
             else:
                 start_touching_time = 0
-
-            time.sleep(POLLING_INTERVAL)
 
     except Exception as e:
         print(f"{__file__}: {e}")
