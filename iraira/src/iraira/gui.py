@@ -209,6 +209,7 @@ class App(tk.Tk):
         if page == Page.TITLE:
             self._page_title.update_ranking()
             self._page_title.tkraise()
+            self._player_param.play_state = False
 
         elif page == Page.GAME:
             self._page_game.tkraise()
@@ -216,7 +217,7 @@ class App(tk.Tk):
 
         elif page == Page.RESULT:
             self._page_result.tkraise()
-            self._player_param.play_state = False
+            self._player_param.play_state = True
 
 
 class TitlePage(tk.Frame):
