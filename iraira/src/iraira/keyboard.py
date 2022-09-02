@@ -65,7 +65,7 @@ def execute_command(
 def keyboard_listener(
     callback: Callable[[AppCommand], None],
     app_state: AppState,
-):
+) -> None:
     """キーボードの入力を読み取り対応するAppCommandでCallableを呼ぶ
     :param callback: AppCommandを処理するコールバック関数
     :param app_state: アプリ動作状態
