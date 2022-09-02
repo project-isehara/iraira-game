@@ -43,8 +43,8 @@ def read_wav(file: Path) -> npt.NDArray[np.uint8 | np.int16]:
 class GameSoundEffect:
     def __init__(self) -> None:
         self._sound_touch_walls = (
-            (read_wav(_sound_touch_wall_1_path)[:22050] * 2).astype(np.int16),  # 0.5 sec & 音量調整
-            (read_wav(_sound_touch_wall_2_path)[:22050] * 2).astype(np.int16),  # 0.5 sec & 音量調整
+            (read_wav(_sound_touch_wall_1_path)[:22050] * 5).astype(np.int16),  # 0.5 sec & 音量調整
+            (read_wav(_sound_touch_wall_2_path)[:22050] * 5).astype(np.int16),  # 0.5 sec & 音量調整
         )
         self._sound_goal = read_wav(_sound_goal_path)
 
