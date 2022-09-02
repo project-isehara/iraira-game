@@ -1,4 +1,5 @@
 from __future__ import annotations
+from concurrent.futures import ThreadPoolExecutor
 
 import random
 import sys
@@ -10,7 +11,7 @@ import numpy as np
 import numpy.typing as npt
 import pyaudio
 
-from iraira.state import AppState, GameState, PlayerState, SignalParam, TractionDirection
+from iraira.state import AppState, GameState, GuiState, Page, PlayerState, SignalParam, TractionDirection
 from iraira.traction_wave import traction_wave
 from iraira.util import RepoPath
 
@@ -46,7 +47,7 @@ class GameSoundEffect:
             (read_wav(_sound_touch_wall_1_path)[:22050] * 5).astype(np.int16),  # 0.5 sec & 音量調整
             (read_wav(_sound_touch_wall_2_path)[:22050] * 5).astype(np.int16),  # 0.5 sec & 音量調整
         )
-        self._sound_goal = read_wav(_sound_goal_path)
+        self._sound_goal = read_wav(_sound_goal_path).astype(np.int16)
 
     def sound_touch_wall_random(self) -> npt.NDArray[np.int16]:
         return random.choice(self._sound_touch_walls)
@@ -120,7 +121,19 @@ def create_traction_wave(
     return sig
 
 
-def play(app_state: AppState, player_param: PlayerState, sig_param: SignalParam, game_state: GameState) -> None:
+def stop_on_title_page(player: Player, app_state: AppState, gui_state: GuiState) -> None:
+    while app_state.is_running:
+        if gui_state.current_page == Page.TITLE:
+            player.stop()
+
+
+def play(
+    app_state: AppState,
+    player_param: PlayerState,
+    sig_param: SignalParam,
+    game_state: GameState,
+    gui_state: GuiState,
+) -> None:
     """音声出力
 
     :param app_state: アプリ状態
@@ -136,6 +149,9 @@ def play(app_state: AppState, player_param: PlayerState, sig_param: SignalParam,
         with Player(player_param) as player:
             player.start()
 
+            # with ThreadPoolExecutor(max_workers=2) as executor:
+            #     executor.submit(stop_on_title_page, player, app_state, gui_state)
+
             while app_state.is_running:
                 if not player_param.play_state:
                     player.stop()
@@ -143,7 +159,9 @@ def play(app_state: AppState, player_param: PlayerState, sig_param: SignalParam,
                 else:
                     player.start()
 
-                if touch_count != game_state.touch_count:
+                if gui_state.current_page == Page.RESULT:
+                    sig = game_sound.sound_goal()
+                elif touch_count != game_state.touch_count:
                     touch_count = game_state.touch_count
                     sig = game_sound.sound_touch_wall_random()
                 else:
@@ -157,6 +175,7 @@ def play(app_state: AppState, player_param: PlayerState, sig_param: SignalParam,
                     # 値域調整 16bit & 音量調整
                     sig = (traction_wave * 32767 * player_param.volume).astype(np.int16)
 
+                # sig = game_sound.sound_goal()
                 player.write(sig)
 
     except Exception as e:
