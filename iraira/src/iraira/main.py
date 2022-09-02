@@ -76,7 +76,7 @@ def main() -> None:
         try:
             from iraira.touch_sensing import touch_listener
 
-            f_touch_sensing = loop.run_in_executor(pool, touch_listener, app_state, game_state)
+            f_touch_sensing = loop.run_in_executor(pool, touch_listener, app_state, game_state, gui_state)
             futures.append(f_touch_sensing)
         except RuntimeError as e:
             print(f"touch_sensing module: {e}")
