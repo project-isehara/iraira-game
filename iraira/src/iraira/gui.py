@@ -326,7 +326,7 @@ class GamePage(tk.Frame):
         self._create_title_label().pack(anchor=tk.CENTER, pady=20)
         self._create_traction_status().pack(anchor=tk.N, pady=30, fill=tk.X)
 
-        app_status = self._create_app_status_label()
+        app_status = self._create_gema_status()
         app_status.pack(anchor=tk.CENTER, pady=30)
         self.update_app_status()
 
@@ -342,18 +342,10 @@ class GamePage(tk.Frame):
         self._ing = tk.Label(f, text=text, font=(None, 60))
         self._ing.grid(column=0, row=1, sticky=tk.W + tk.E + tk.N + tk.S, columnspan=2, padx=5)
 
-        # self._left = tk.Label(f, text="⬅", font=(None, 200), fg="DodgerBlue1")
-        # self._left.grid(column=0, row=2, sticky=tk.W + tk.E + tk.N + tk.S, padx=5)
-
-        # self._right = tk.Label(f, text="➡", font=(None, 200), fg="OrangeRed")
-        # self._right.grid(column=1, row=2, sticky=tk.W + tk.E + tk.N + tk.S, padx=5)
-
         f.grid_columnconfigure(0, weight=1)
-        # f.grid_columnconfigure(1, weight=1)
-        # f.grid_columnconfigure(2, weight=2)
         return f
 
-    def _create_app_status_label(self) -> tk.Frame:
+    def _create_gema_status(self) -> tk.Frame:
         f = tk.Frame(self)
 
         self._time = tk.Label(f, text="TIME", font=(None, 60))
