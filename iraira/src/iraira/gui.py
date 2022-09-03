@@ -31,13 +31,13 @@ class Result:
     @property
     def score(self) -> float:
         """スコアの算出"""
-        s = (200 - self.time_sec) - (self.touch_count * 4)
+        s = (200 - self.time_sec) - (self.touch_count * 5)
         return 0 if s < 0 else s
 
 
 def score(time: float, touch_count: int) -> float:
     """スコアの算出"""
-    s = (200 - time) - (touch_count * 4)
+    s = (200 - time) - (touch_count * 5)
     return 0 if s < 0 else s
 
 
