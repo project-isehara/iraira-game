@@ -364,7 +364,6 @@ class GamePage(tk.Frame):
 
         # 牽引力方向
         t = list("-" * 21)
-        t[10] = "0"
         v = int(self._player_param.volume * 10)
         if self._sig_param.traction_direction == TractionDirection.up:
             t[10 + v] = "★"
