@@ -359,7 +359,7 @@ class GamePage(tk.Frame):
         self._time = tk.Label(f, text="TIME", font=(None, 60))
         self._time.grid(column=0, row=0, sticky=tk.W + tk.E, padx=5, pady=5)
 
-        t = tk.Label(f, text="壁接触👹: ", font=(None, 50))
+        t = tk.Label(f, text="壁接触: ", font=(None, 50))
         t.grid(column=0, row=1, sticky=tk.W + tk.E, padx=5, pady=5)
 
         self._touch_count = tk.Label(f, text="n", font=(None, 60))
@@ -374,9 +374,9 @@ class GamePage(tk.Frame):
         t = list("-" * 21)
         v = int(self._player_param.volume * 10)
         if self._sig_param.traction_direction == TractionDirection.up:
-            t[10 + v] = "👿"
+            t[10 + v] = "★"
         else:
-            t[10 - v] = "👿"
+            t[10 - v] = "★"
         self._ing.configure(text="".join(t))
 
         # 経過時間
@@ -433,13 +433,13 @@ class ResultPage(tk.Frame):
         self._time = tk.Label(f, text="          ", font=(None, 60))
         self._time.grid(column=1, row=0, sticky=tk.W + tk.E, padx=5, pady=5)
 
-        t = tk.Label(f, text="壁接触回数👹: ", font=(None, 50))
+        t = tk.Label(f, text="壁接触回数: ", font=(None, 50))
         t.grid(column=0, row=1, sticky=tk.E, padx=5, pady=5)
 
         self._touch_count = tk.Label(f, text=0, font=(None, 60))
         self._touch_count.grid(column=1, row=1, sticky=tk.W + tk.E, padx=5, pady=5)
 
-        t = tk.Label(f, text="スコア🎉: ", font=(None, 60))
+        t = tk.Label(f, text="☆スコア☆: ", font=(None, 60))
         t.grid(column=0, row=2, sticky=tk.E, padx=5, pady=5)
 
         self._score = tk.Label(f, text=0, font=(None, 100))

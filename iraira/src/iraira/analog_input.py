@@ -81,7 +81,7 @@ def button_pressed(game_state: GameState, gui_state: GuiState) -> None:
 
     if current_page == Page.RESULT:
         gui_state.current_page = Page.TITLE
-        game_state.clear_game_state
+        game_state.clear_game_state()
 
 
 def button_released(game_state: GameState, gui_state: GuiState) -> None:
@@ -91,3 +91,4 @@ def button_released(game_state: GameState, gui_state: GuiState) -> None:
 def button_longpressed(game_state: GameState, gui_state: GuiState) -> None:
     if gui_state.current_page == Page.GAME:
         gui_state.current_page = Page.TITLE
+        game_state.clear_game_state()
