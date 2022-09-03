@@ -372,12 +372,13 @@ class GamePage(tk.Frame):
 
         # 牽引力方向
         t = list("-" * 21)
+        t[10] = "0"
         v = int(self._player_param.volume * 10)
         if self._sig_param.traction_direction == TractionDirection.up:
             t[10 + v] = "★"
         else:
             t[10 - v] = "★"
-        self._ing.configure(text="".join(t))
+        self._ing.configure(text=f"←{''.join(t)}→")
 
         # 経過時間
         t = time.time() - self._game_state.start_time
