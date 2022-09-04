@@ -25,11 +25,7 @@ GOAL_DETECTION_DURATION = 0.3  # sec
 START_DETECTION_DURATION = 1.0  # sec
 
 
-def touch_listener(
-    app_state: AppState,
-    game_state: GameState,
-    gui_state: GuiState
-) -> None:
+def touch_listener(app_state: AppState, game_state: GameState, gui_state: GuiState) -> None:
     try:
         course_last_touched_time: float = 0.0
         course_is_touching: bool = False
