@@ -1,14 +1,9 @@
-# iseharaプロジェクト
+# 妨害イライラ棒
 
-[プロジェクト決めマインドマップ: miro](https://miro.com/app/board/o9J_lh-WBh4=/)  
-[プロジェクト管理ダッシュボード](https://github.com/orgs/project-isehara/projects/1/views/1)
+## Directory layout
 
-## プロジェクトの成果物管理リポジトリ
-
-ディレクトリ構成
-
-```
-├─bilibili_emb    # M5制御用コード
-├─experiment      # 実験的コード
-└─iraira          # イライラ棒制御プログラム
+```text
+├─experiment        # 実験検証コード
+├─iraira            # イライラ棒メインシステム (Python, Raspberry Pi 3)
+└─iraira_analog_emb # イライラ棒ゲームコントローラー制御 (C++, M5Atom)
 ```
