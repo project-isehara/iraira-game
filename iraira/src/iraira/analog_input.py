@@ -4,7 +4,7 @@ import time
 import serial
 
 from iraira.player import SignalParam
-from iraira.state import AppState, PlayerState, GameState, GuiState, Page
+from iraira.state import AppState, GameState, GuiState, Page, PlayerState
 
 ZERO_VALUE_RANGE = 0.02  # アナログ値の中央から±この範囲の値まで，ゼロとして扱う
 
@@ -14,7 +14,7 @@ def analog_listener(
     sig_param: SignalParam,
     player_state: PlayerState,
     game_state: GameState,
-    gui_state: GuiState
+    gui_state: GuiState,
 ) -> None:
     try:
         with serial.Serial("/dev/ttyUSB0", 115200, timeout=0.01) as serial_port:
@@ -30,7 +30,7 @@ def analog_listener(
                 all_completed_string: str = None  # その時点で，完全な行として読み込んだ要素からなる文字列
 
                 last_ln_index = all_read_bytes.decode("utf8").rfind("\n")
-                if (last_ln_index == len(all_read_bytes)-1):  # 読み込んだタイミングで，行を全受信していた場合
+                if last_ln_index == len(all_read_bytes) - 1:  # 読み込んだタイミングで，行を全受信していた場合
                     reading_bytes = bytes()  # 読みかけの要素なし
                     all_completed_string = all_read_bytes.decode("utf8")
                 else:
@@ -81,7 +81,7 @@ def button_pressed(game_state: GameState, gui_state: GuiState) -> None:
 
     if current_page == Page.RESULT:
         gui_state.current_page = Page.TITLE
-        game_state.clear_game_state
+        game_state.clear_game_state()
 
 
 def button_released(game_state: GameState, gui_state: GuiState) -> None:
@@ -91,3 +91,4 @@ def button_released(game_state: GameState, gui_state: GuiState) -> None:
 def button_longpressed(game_state: GameState, gui_state: GuiState) -> None:
     if gui_state.current_page == Page.GAME:
         gui_state.current_page = Page.TITLE
+        game_state.clear_game_state()

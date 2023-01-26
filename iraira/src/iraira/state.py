@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 from enum import Enum, auto
 from multiprocessing.managers import DictProxy  # type: ignore
@@ -292,6 +293,14 @@ class GameState(Protocol):
     def is_goaled(self, value: bool) -> None:
         ...
 
+    @property
+    def start_time(self) -> float:
+        ...
+
+    @start_time.setter
+    def start_time(self, value: float) -> None:
+        ...
+
     def increment_touch_count(self) -> None:
         ...
 
@@ -324,6 +333,14 @@ class SharedGameState:
     def is_goaled(self, value: bool) -> None:
         self._raw["isGoaled"] = value
 
+    @property
+    def start_time(self) -> float:
+        return self._raw["start_time"]
+
+    @start_time.setter
+    def start_time(self, value: float) -> None:
+        self._raw["start_time"] = value
+
     def increment_touch_count(self) -> None:
         count = self._raw["touch_count"]
         self._raw["touch_count"] = count + 1
@@ -336,6 +353,7 @@ class SharedGameState:
         self._raw["touch_count"] = 0
         self._raw["touch_time"] = 0
         self._raw["isGoaled"] = False
+        self._raw["start_time"] = time.time()
 
     @staticmethod
     def get(d: DictProxy) -> SharedGameState:
@@ -351,6 +369,7 @@ class SharedGameState:
         d["touch_count"] = touch_count
         d["touch_time"] = touch_time
         d["isGoaled"] = is_goaled
+        d["start_time"] = 0
         return SharedGameState(d)
 
 

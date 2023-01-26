@@ -43,10 +43,12 @@ def read_wav(file: Path) -> npt.NDArray[np.uint8 | np.int16]:
 class GameSoundEffect:
     def __init__(self) -> None:
         self._sound_touch_walls = (
-            (read_wav(_sound_touch_wall_1_path)[:22050] * 2.1).astype(np.int16),  # 0.5 sec & 音量調整
-            (read_wav(_sound_touch_wall_2_path)[:22050] * 2.5).astype(np.int16),  # 0.5 sec & 音量調整
+            # (read_wav(_sound_touch_wall_1_path)[:22050] * 2.1).astype(np.int16),  # 0.5 sec & 音量調整
+            # (read_wav(_sound_touch_wall_2_path)[:22050] * 2.5).astype(np.int16),  # 0.5 sec & 音量調整
+            (read_wav(_sound_touch_wall_1_path)[:22050] * 5).astype(np.int16),  # 0.5 sec & 音量調整
+            (read_wav(_sound_touch_wall_2_path)[:22050] * 5).astype(np.int16),  # 0.5 sec & 音量調整
         )
-        self._sound_goal = (read_wav(_sound_goal_path)[: int(44100 * 9.3)] * 1.7).astype(np.int16)
+        self._sound_goal = (read_wav(_sound_goal_path)[: int(44100 * 9.3)] * 1.8).astype(np.int16)  # 音源の使用する長さ & 音量調整
 
     def sound_touch_wall_random(self) -> npt.NDArray[np.int16]:
         return random.choice(self._sound_touch_walls)

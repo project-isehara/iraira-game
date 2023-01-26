@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import csv
 import sys
+import time
 import tkinter as tk
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
 
 from iraira.player import SignalParam
-from iraira.state import AppState, GameState, GuiState, Page, PlayerState
+from iraira.state import AppState, GameState, GuiState, Page, PlayerState, TractionDirection
 from iraira.util import RepoPath
 
 _result_path = RepoPath().db_dir / "result.csv"
@@ -30,8 +31,14 @@ class Result:
     @property
     def score(self) -> float:
         """スコアの算出"""
-        s = (200 - self.time_sec) - (self.touch_count * 4)
+        s = (200 - self.time_sec) - (self.touch_count * 5)
         return 0 if s < 0 else s
+
+
+def score(time: float, touch_count: int) -> float:
+    """スコアの算出"""
+    s = (200 - time) - (touch_count * 5)
+    return 0 if s < 0 else s
 
 
 def read_results(count: int) -> list[Result]:
@@ -178,10 +185,10 @@ class App(tk.Tk):
                 self._player_param.change_play_state()
 
             elif event.keysym_num == 65361:  # key: Left
-                self._sig_param.traction_up()
+                self._sig_param.traction_down()
 
             elif event.keysym_num == 65363:  # key: Right
-                self._sig_param.traction_down()
+                self._sig_param.traction_up()
 
             elif event.keysym_num == 65362:  # key: Up
                 self._player_param.volume_up()
@@ -214,8 +221,10 @@ class App(tk.Tk):
         elif page == Page.GAME:
             self._page_game.tkraise()
             self._player_param.play_state = True
+            self._game_state.start_time = time.time()
 
         elif page == Page.RESULT:
+            self._page_result.update_app_status()
             self._page_result.tkraise()
             self._player_param.play_state = True
 
@@ -314,58 +323,62 @@ class GamePage(tk.Frame):
     def _create_game_page(self) -> None:
         self.grid(row=0, column=0, sticky="nsew")
 
-        self._create_game_status_label().pack(anchor=tk.CENTER, pady=10)
         self._create_title_label().pack(anchor=tk.CENTER, pady=20)
-        self._create_traction_status().pack(anchor=tk.CENTER, pady=10)
+        self._create_traction_status().pack(anchor=tk.N, pady=30, fill=tk.X)
 
-        app_status = self._create_app_status_label()
-        app_status.pack(anchor=tk.CENTER, pady=10)
-        self.update_app_status(app_status)
+        app_status = self._create_gema_status()
+        app_status.pack(anchor=tk.CENTER, pady=30)
+        self.update_app_status()
 
     def _create_title_label(self) -> tk.Label:
         return tk.Label(self, text="妨害イライラ棒", font=(None, "70"))
 
-    def _create_traction_status(self) -> tk.Label:
+    def _create_traction_status(self) -> tk.Frame:
+        f = tk.Frame(self, height=200)
+        t = tk.Label(f, text="ぼうがいレベル", font=(None, 40))
+        t.grid(column=0, row=0, sticky=tk.W + tk.E + tk.N + tk.S, columnspan=2, padx=5)
+
+        text = "-" * 21
+        self._ing = tk.Label(f, text=text, font=(None, 60))
+        self._ing.grid(column=0, row=1, sticky=tk.W + tk.E + tk.N + tk.S, columnspan=2, padx=5)
+
+        f.grid_columnconfigure(0, weight=1)
+        return f
+
+    def _create_gema_status(self) -> tk.Frame:
         f = tk.Frame(self)
-        tk.Label(f, text="⬅", font=(None, "200")).grid(column=0, row=0, sticky=tk.W, padx=5, pady=5)
-        tk.Label(f, text="ぼうがい！", font=(None, "40")).grid(column=1, row=0, sticky=tk.W, padx=5, pady=5)
-        tk.Label(f, text="➡", font=(None, "200")).grid(column=2, row=0, sticky=tk.W, padx=5, pady=5)
+
+        self._time = tk.Label(f, text="TIME", font=(None, 60))
+        self._time.grid(column=0, row=0, sticky=tk.W + tk.E, padx=5, pady=5)
+
+        t = tk.Label(f, text="壁接触: ", font=(None, 50))
+        t.grid(column=0, row=1, sticky=tk.W + tk.E, padx=5, pady=5)
+
+        self._touch_count = tk.Label(f, text="n", font=(None, 60))
+        self._touch_count.grid(column=1, row=1, sticky=tk.W + tk.E, padx=5, pady=5)
 
         return f
 
-    def _create_game_status_label(self) -> tk.Label:
-        f = tk.Frame(self)
-        tk.Label(f, text="").grid(column=0, row=0, sticky=tk.W, padx=5, pady=5)
-        tk.Label(f, text="NAME", font=(None, "15")).grid(column=1, row=0, sticky=tk.W, padx=5, pady=5)
-        tk.Label(f, text="TIME [s]", font=(None, "15")).grid(column=2, row=0, sticky=tk.W, padx=5, pady=5)
-        tk.Label(f, text="TOUCH", font=(None, "15")).grid(column=3, row=0, sticky=tk.W, padx=5, pady=5)
-        tk.Label(f, text="SCORE", font=(None, "15")).grid(column=4, row=0, sticky=tk.W, padx=5, pady=5)
-
-        return tk.Label(
-            self,
-            text="妨害イライラ棒情報？\nライフポイント [#####      ]: \n接触時間: n [sec]\n接触回数: n [回]",
-            font=(None, 24),
-            justify=tk.LEFT,
-        )
-
-    def _create_app_status_label(self) -> tk.Label:
-        return tk.Label(
-            self,
-            font=(None, 24),
-            justify=tk.LEFT,
-        )
-
-    def update_app_status(self, app_status: tk.Label) -> None:
+    def update_app_status(self) -> None:
         """アプリ情報を定期更新する"""
-        app_status.configure(
-            text=(
-                f"volume  : {self._player_param.volume:.1f}\n"
-                f"traction: {self._sig_param.traction_direction:>4}\n"
-                f"play    : {'playing' if self._player_param.play_state else 'stop':>7}\n"
-            )
-        )
 
-        self.after(200, lambda: self.update_app_status(app_status))
+        # 牽引力方向
+        t = list("-" * 21)
+        v = int(self._player_param.volume * 10)
+        if self._sig_param.traction_direction == TractionDirection.up:
+            t[10 + v] = "★"
+        else:
+            t[10 - v] = "★"
+        self._ing.configure(text=f"←{''.join(t)}→")
+
+        # 経過時間
+        t = time.time() - self._game_state.start_time
+        self._time.configure(text=f"{t:.1f}")
+
+        # 接触回数
+        self._touch_count.configure(text=self._game_state.touch_count)
+
+        self.after(100, lambda: self.update_app_status())
 
 
 class ResultPage(tk.Frame):
@@ -401,10 +414,46 @@ class ResultPage(tk.Frame):
         return tk.Label(self, text="妨害イライラ棒", font=(None, "70"))
 
     def _create_goal_label(self) -> tk.Label:
-        return tk.Label(self, text="ゴール !!", font=(None, 48))
+        return tk.Label(self, text="RESULT", font=(None, 60))
 
-    def _create_result_label(self) -> tk.Label:
-        return tk.Label(self, text="クリア (or 失敗)", font=(None, 30))
+    def _create_result_label(self) -> tk.Frame:
+        f = tk.Frame(self)
+
+        self._time = tk.Label(f, text="クリア時間: ", font=(None, 60))
+        self._time.grid(column=0, row=0, sticky=tk.E, padx=5, pady=5)
+
+        self._time = tk.Label(f, text="          ", font=(None, 60))
+        self._time.grid(column=1, row=0, sticky=tk.W + tk.E, padx=5, pady=5)
+
+        t = tk.Label(f, text="壁接触回数: ", font=(None, 50))
+        t.grid(column=0, row=1, sticky=tk.E, padx=5, pady=5)
+
+        self._touch_count = tk.Label(f, text=0, font=(None, 60))
+        self._touch_count.grid(column=1, row=1, sticky=tk.W + tk.E, padx=5, pady=5)
+
+        t = tk.Label(f, text="☆スコア☆: ", font=(None, 60))
+        t.grid(column=0, row=2, sticky=tk.E, padx=5, pady=5)
+
+        self._score = tk.Label(f, text=0, font=(None, 100))
+        self._score.grid(column=1, row=2, sticky=tk.W + tk.E, padx=5, pady=5)
+
+        f.grid_columnconfigure(0, weight=1)
+        f.grid_columnconfigure(1, weight=2)
+        return f
+
+    def update_app_status(self) -> None:
+        """アプリ情報を定期更新する"""
+
+        # 経過時間
+        t = time.time() - self._game_state.start_time
+        self._time.configure(text=f"{t:.1f} 秒")
+
+        # 接触回数
+        self._touch_count.configure(text=self._game_state.touch_count)
+
+        # スコア
+        s = int(score(t, self._game_state.touch_count))
+        self._score.configure(text=s)
 
 
 def show_gui(
