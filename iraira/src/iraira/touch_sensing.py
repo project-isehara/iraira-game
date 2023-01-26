@@ -42,21 +42,25 @@ def touch_listener(app_state: AppState, game_state: GameState, gui_state: GuiSta
                 start_touching_time = 0.0
                 continue
 
+            # コース上の接触判定
             if GPIO.input(GPIO_1ST_STAGE) == 0 or GPIO.input(GPIO_2ND_STAGE) == 0:
                 course_elapsed_time = time.time() - course_last_touched_time
 
+                # 接触時間のカウント
                 if not course_is_touching:
                     course_last_touched_time = time.time()
                     course_is_touching = True
                 else:
                     game_state.add_touch_time(POLLING_INTERVAL)
 
+                # 無敵時間判定
                 if course_elapsed_time > INVINCIBLE_INTERVAL:
                     game_state.increment_touch_count()
                     course_last_touched_time = time.time()
             else:
                 course_is_touching = False
 
+            # ゴールの接触判定
             if GPIO.input(GPIO_GOAL_POINT) == 0:
                 goal_touching_time += POLLING_INTERVAL
                 if goal_touching_time >= GOAL_DETECTION_DURATION + POLLING_INTERVAL:
@@ -64,6 +68,7 @@ def touch_listener(app_state: AppState, game_state: GameState, gui_state: GuiSta
             else:
                 goal_touching_time = 0
 
+            # スタートの接触判定
             if GPIO.input(GPIO_START_POINT) == 0:
                 start_touching_time += POLLING_INTERVAL
                 if start_touching_time >= GOAL_DETECTION_DURATION + POLLING_INTERVAL:

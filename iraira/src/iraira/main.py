@@ -81,6 +81,14 @@ def main() -> None:
         except RuntimeError as e:
             print(f"touch_sensing module: {e}")
 
+        try:
+            from iraira.led_driver import led_listener
+
+            f_led_driver = loop.run_in_executor(pool, led_listener, app_state, game_state, gui_state)
+            futures.append(f_led_driver)
+        except RuntimeError as e:
+            print(f"led_driver module: {e}")
+
         f = asyncio.gather(*futures, return_exceptions=True)
         try:
             loop.run_until_complete(f)
