@@ -118,6 +118,9 @@ class App(tk.Tk):
         self._check_current_page()
         self._gui_state.current_page = Page.TITLE
 
+
+        self.bind("<Button-1>", self._click_anyware)
+
     def _create_page(self) -> None:
         """ページGUIの構築"""
 
@@ -155,7 +158,7 @@ class App(tk.Tk):
         current_page = self._gui_state.current_page
 
         if current_page != self._previus_page:
-            self.change_page(current_page)
+            self.change_page_view(current_page)
             self._previus_page = current_page
 
         self.after(200, self._check_current_page)
@@ -169,19 +172,13 @@ class App(tk.Tk):
         if event.keysym_num == 113:  # key: q
             self._app_state.is_running = False
 
+        if event.keysym_num == 65293:  # key: Return, 画面遷移
+            self.change_page_state()
+
         # 画面ごとのイベント
-        if self._gui_state.current_page == Page.TITLE:
-            if event.keysym_num == 65293:  # key: Return
-                self._gui_state.current_page = Page.GAME
-                self._game_state.clear_game_state()
-
-        elif self._gui_state.current_page == Page.GAME:
-            # 画面遷移
-            if event.keysym_num == 65293:  # key: Return
-                self._gui_state.current_page = Page.RESULT
-
+        if self._gui_state.current_page == Page.GAME:
             # 操作
-            elif event.keysym_num == 32:  # key: space
+            if event.keysym_num == 32:  # key: space
                 self._player_param.change_play_state()
 
             elif event.keysym_num == 65361:  # key: Left
@@ -208,11 +205,11 @@ class App(tk.Tk):
             elif event.keysym_num == 114:  # key: r
                 self._game_state.increment_touch_count()
 
-        elif self._gui_state.current_page == Page.RESULT:
-            if event.keysym_num == 65293:  # key: Return
-                self._gui_state.current_page = Page.TITLE
+    def _click_anyware(self,event: tk.Event)->None:
+        self.change_page_state()
 
-    def change_page(self, page: Page) -> None:
+
+    def change_page_view(self, page: Page) -> None:
         if page == Page.TITLE:
             self._page_title.update_ranking()
             self._page_title.tkraise()
@@ -227,6 +224,16 @@ class App(tk.Tk):
             self._page_result.update_app_status()
             self._page_result.tkraise()
             self._player_param.play_state = True
+
+    def change_page_state(self) -> None:
+        """ページの状態を変更する。この変数の変化は監視されており、適したページ表示に切り替えられる"""
+        if self._gui_state.current_page == Page.TITLE:
+            self._gui_state.current_page = Page.GAME
+            self._game_state.clear_game_state()
+        elif self._gui_state.current_page == Page.GAME:
+            self._gui_state.current_page = Page.RESULT
+        elif self._gui_state.current_page == Page.RESULT:
+            self._gui_state.current_page = Page.TITLE
 
 
 class TitlePage(tk.Frame):
@@ -319,6 +326,7 @@ class GamePage(tk.Frame):
         self._gui_state = gui_state
 
         self._create_game_page()
+
 
     def _create_game_page(self) -> None:
         self.grid(row=0, column=0, sticky="nsew")

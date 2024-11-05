@@ -17,7 +17,7 @@ def analog_listener(
     gui_state: GuiState,
 ) -> None:
     try:
-        with serial.Serial("/dev/ttyUSB0", 115200, timeout=0.01) as serial_port:
+        with serial.Serial("/dev/M5_ATOM", 115200, timeout=0.01) as serial_port:
             reading_bytes: bytes = bytes()
 
             while app_state.is_running:

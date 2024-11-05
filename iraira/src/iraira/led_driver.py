@@ -9,7 +9,6 @@ GPIO_LED = 14
 
 GPIO.setup(GPIO_LED, GPIO.OUT, initial=GPIO.HIGH)
 
-
 def led_listener(
     app_state: AppState,
     game_state: GameState,
@@ -30,7 +29,7 @@ def led_listener(
 
     try:
         while app_state.is_running:
-            time.sleep(0.001)
+            time.sleep(0.01)
             current_time = time.time()
 
             if gui_state.current_page == Page.TITLE:
@@ -113,7 +112,5 @@ def led_listener(
 def alternate_output(pin_no: int):
     if GPIO.input(pin_no) == GPIO.HIGH:
         GPIO.output(pin_no, GPIO.LOW)
-        print("change to low")
     else:
         GPIO.output(pin_no, GPIO.HIGH)
-        print("change to high")
